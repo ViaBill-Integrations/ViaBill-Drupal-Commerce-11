@@ -1,0 +1,10 @@
+{
+    "name": "myname/viabill_payments",
+    "description": "ViaBill Payments integration for Drupal Commerce",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "require": {
+      "drupal/commerce": "^2.0 || ^3.0"
+    }
+}
+

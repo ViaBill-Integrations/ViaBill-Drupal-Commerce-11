@@ -1,0 +1,6 @@
+viabill_partial_capture:
+  category: commerce_payment
+  label: 'ViaBill Partial Capture'
+  template: 'Partial payment capture: {{ captured }} of {{ authorized }}'
+  default_settings:
+    use_administrative_title: true

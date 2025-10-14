@@ -1,0 +1,379 @@
+# ViaBill Payments
+
+'Please <a href=":login_link">log in</a> or <a href=":register_link">register</a> with ViaBill to retrieve your API credentials before configuring the payment gateway.':
+  dk: '<a href=":login_link">Log venligst ind</a> eller <a href=":register_link">registrer dig</a> hos ViaBill for at hente dine API-oplysninger, før du konfigurerer betalingsmetoden.'
+  es: 'Por favor, <a href=":login_link">inicia sesión</a> o <a href=":register_link">regístrate</a> con ViaBill para obtener tus credenciales de API antes de configurar la pasarela de pago.'
+
+'You are currently logged in as <strong>:email</strong>. Not you? <a href=":login_link">log in</a> or <a href=":register_link">register</a> with ViaBill to retrieve your new API credentials.<br/>
+          You can visit your ViaBill account <a href=":viabill_link" target="_blank">here</a>':
+  dk: 'Du er i øjeblikket logget ind som <strong>:email</strong>. Er det ikke dig? <a href=":login_link">Log ind</a> eller <a href=":register_link">registrer dig</a> hos ViaBill for at hente dine nye API-oplysninger.<br/>Du kan få adgang til din ViaBill-konto <a href=":viabill_link" target="_blank">her</a>.'
+  es: 'Actualmente has iniciado sesión como <strong>:email</strong>. ¿No eres tú? <a href=":login_link">inicia sesión</a> o <a href=":register_link">regístrate</a> con ViaBill para obtener tus nuevas credenciales de API.<br/>Puedes acceder a tu cuenta de ViaBill <a href=":viabill_link" target="_blank">aquí</a>.'
+
+'ViaBill Payments Preferences':
+  dk: 'ViaBill Betalingspræferencer'
+  es: 'Preferencias de Pagos de ViaBill'
+
+'Configure how ViaBill payments are processed.':
+  dk: 'Konfigurer hvordan ViaBill-betalinger behandles.'
+  es: 'Configure cómo se procesan los pagos de ViaBill.'
+
+'Transaction Type':
+  dk: 'Transaktionstype'
+  es: 'Tipo de Transacción'
+
+'Authorize Only':
+  dk: 'Autoriser kun'
+  es: 'Solo autorizar'
+
+'Authorize and Capture':
+  dk: 'Autoriser og hæv'
+  es: 'Autorizar y capturar'
+
+'ViaBill Payments Credentials':
+  dk: 'ViaBill Betalingsoplysninger'
+  es: 'Credenciales de ViaBill'
+
+'API credentials for connecting to the ViaBill payment service.':
+  dk: 'API-oplysninger for forbindelsen til ViaBill.'
+  es: 'Credenciales de API para conectar con el servicio de pago de ViaBill.'
+
+'API Key':
+  dk: 'API-nøgle'
+  es: 'Clave de API'
+
+'API Secret':
+  dk: 'API-secret'
+  es: 'Secreto de API'
+
+'PriceTags':
+  dk: 'Pricetags'
+  es: 'Etiquetas de precio'
+
+'Configuration for ViaBill price tag display.':
+  dk: 'Konfiguration for visning af ViaBill-Pricetags.'
+  es: 'Configuración para la visualización de la etiqueta de precio de ViaBill.'
+
+'ViaBill\'s PriceTag is the key to your success as a ViaBill partner.':
+  dk: 'ViaBills Pricetags er nøglen til din succes som ViaBill-partner.'
+  es: 'La etiqueta de precio de ViaBill es la clave de tu éxito como socio de ViaBill.'
+
+'The PriceTag immediately shows your customers how much they have to pay per month if they choose to pay with ViaBill. This way you maintain the customers\' interest and avoid losing customers who would otherwise have abandoned the purchase.':
+  dk: 'Pricetags viser dine kunder, hvor meget de skal betale om måneden, hvis de vælger ViaBill. På den måde bevarer du kundernes interesse og undgår at miste dem, der ellers ville have afbrudt købet.'
+  es: 'La etiqueta de precio muestra inmediatamente a tus clientes cuánto deben pagar por mes si eligen pagar con ViaBill. De esta manera mantienes su interés y evitas la pérdida de clientes que de otro modo habrían abandonado la compra.'
+
+'PriceTag Country':
+  dk: 'Pricetags, land'
+  es: 'País de la Etiqueta de Precio'
+
+'Auto-Detect':
+  dk: 'Automatisk registrering'
+  es: 'Detección automática'
+
+'Denmark':
+  dk: 'Danmark'
+  es: 'Dinamarca'
+
+'Spain':
+  dk: 'Spanien'
+  es: 'España'
+
+'PriceTag Language':
+  dk: 'Pricetag, sprog'
+  es: 'Idioma de la Etiqueta de Precio'
+
+'Danish':
+  dk: 'Dansk'
+  es: 'Danés'
+
+'Spanish':
+  dk: 'Spansk'
+  es: 'Español'
+
+'Product PriceTag':
+  dk: 'Produkt-Pricetag'
+  es: 'Etiqueta de precio del producto'
+
+'To insert the pricetag for the product page, edit on the following twig files and insert the code near the total price:':
+  dk: 'For at indsætte Pricetag på produktsiden, skal du redigere i de følgende Twig-filer og indsætte koden ved/under totalprisen:'
+  es: 'Para insertar la etiqueta de precio en la página del producto, edita los siguientes archivos Twig e inserta el código cerca del precio total:'
+
+'Option #1. Original file location (core module):':
+  dk: 'Mulighed #1. Original filplacering (kernemodul):'
+  es: 'Opción #1. Ubicación de archivo original (módulo principal):'
+
+'Option #2. Theme override location (where you should place your custom version):':
+  dk: 'Mulighed #2. Tema-override (hvor du bør placere din tilpassede version):'
+  es: 'Opción #2. Ubicación de anulación del tema (donde debes colocar tu versión personalizada):'
+
+'If none of the previous options work, try to locate the appropriate file in the templates folder.':
+  dk: 'Hvis ingen af de tidligere muligheder virker, så prøv at finde den rigtige fil i skabelonmappen.'
+  es: 'Si ninguna de las opciones anteriores funciona, intenta encontrar el archivo adecuado en la carpeta de plantillas.'
+
+'Product PriceTag Alignment':
+  dk: 'Justering af produkt-Pricetag'
+  es: 'Alineación de la etiqueta de precio del producto'
+
+'Default':
+  dk: 'Standard'
+  es: 'Predeterminado'
+
+'Center':
+  dk: 'Centreret'
+  es: 'Centrado'
+
+'Right':
+  dk: 'Højre'
+  es: 'Derecha'
+
+'Product PriceTag Width':
+  dk: 'Produkt-Pricetag bredde'
+  es: 'Ancho de la etiqueta de precio del producto'
+
+'Product PriceTag Dynamic Price Selector':
+  dk: 'Dynamisk prisvælger til produkt-Pricetag'
+  es: 'Selector de precio dinámico para la etiqueta de precio del producto'
+
+'Product PriceTag Dynamic Price Trigger':
+  dk: 'Dynamisk pristrigger for produkt-Pricetag'
+  es: 'Disparador de precio dinámico para la etiqueta de precio del producto'
+
+'Product PriceTag Apply Automatically':
+  dk: 'Anvend produkt-Pricetag automatisk'
+  es: 'Aplicar automáticamente la etiqueta de precio del producto'
+
+'No':
+  dk: 'Nej'
+  es: 'No'
+
+'Yes':
+  dk: 'Ja'
+  es: 'Sí'
+
+'Cart PriceTag':
+  dk: 'Kurv-Pricetag'
+  es: 'Etiqueta de precio del carrito'
+
+'To insert the pricetag for the cart page, edit on the following twig files and insert the code near the total price:':
+  dk: 'For at indsætte Pricetag på kurvsiden, skal du redigere i de følgende Twig-filer og indsætte koden ved/under totalprisen:'
+  es: 'Para insertar la etiqueta de precio en la página del carrito, edita los siguientes archivos Twig e inserta el código cerca del precio total:'
+
+'Cart PriceTag Alignment':
+  dk: 'Justering af kurv-Pricetag'
+  es: 'Alineación de la etiqueta de precio del carrito'
+
+'Cart PriceTag Width':
+  dk: 'Kurv-Pricetag bredde'
+  es: 'Ancho de la etiqueta de precio del carrito'
+
+'Cart PriceTag Apply Automatically':
+  dk: 'Anvend kurv-Pricetag automatisk'
+  es: 'Aplicar automáticamente la etiqueta de precio del carrito'
+
+'Checkout PriceTag':
+  dk: 'Checkout-Pricetag'
+  es: 'Etiqueta de precio de la página de pago'
+
+'To insert the pricetag for the checkout page, edit on the following twig files and insert the code near the total price:':
+  dk: 'For at indsætte -Pricetagen på checkout-siden, skal du redigere i de følgende Twig-filer og indsætte koden ved/under totalprisen:'
+  es: 'Para insertar la etiqueta de precio en la página de pago, edita los siguientes archivos Twig e inserta el código cerca del precio total:'
+
+'Checkout PriceTag Alignment':
+  dk: 'Justering af checkout-Pricetag'
+  es: 'Alineación de la etiqueta de precio en la página de pago'
+
+'Checkout PriceTag Width':
+  dk: 'Bredde på checkout-Pricetag'
+  es: 'Ancho de la etiqueta de precio en la página de pago'
+
+'Checkout PriceTag Apply Automatically':
+  dk: 'Anvend checkout-Pricetag automatisk'
+  es: 'Aplicar automáticamente la etiqueta de precio en la página de pago'
+
+'PriceTag Script':
+  dk: 'Pricetag-script'
+  es: 'Script de la etiqueta de precio'
+
+'PriceTag Custom CSS':
+  dk: 'Tilpas CSS til Pricetag'
+  es: 'CSS personalizado para la etiqueta de precio'
+
+'Optional CSS statement, to further customize the appearance of the PriceTags.':
+  dk: 'Valgfri CSS-sætning til yderligere at tilpasse udseendet af Pricetag.'
+  es: 'Declaración de CSS opcional para personalizar aún más la apariencia de la etiqueta de precio.'
+
+'captureTransaction failed.':
+  dk: 'captureTransaction mislykkedes.'
+  es: 'captureTransaction falló.'
+
+'Error processing capture':
+  dk: 'Fejl ved behandling af indløsning'
+  es: 'Error al procesar la captura'
+
+'Payment fully captured':
+  dk: 'Betaling fuldt indløst'
+  es: 'Pago completamente capturado'
+
+'Payment partially captured: @captured of @authorized':
+  dk: 'Betaling delvist indløst: @captured af @authorized'
+  es: 'Pago parcialmente capturado: @captured de @authorized'
+
+'Payment voided successfully':
+  dk: 'Betaling er nu annulleret'
+  es: 'Pago anulado con éxito'
+
+'Void operation failed':
+  dk: 'Annullering mislykkedes'
+  es: 'Falló la operación de anulación'
+
+'Error processing void':
+  dk: 'Fejl ved behandling af annullering'
+  es: 'Error al procesar la anulación'
+
+'Refund processed successfully':
+  dk: 'Tilbagebetalingen gennemført med succes'
+  es: 'Reembolso procesado con éxito'
+
+'Refund operation failed':
+  dk: 'Tilbagebetalingen mislykkedes'
+  es: 'Falló la operación de reembolso'
+
+'Error processing refund':
+  dk: 'Fejl ved behandling af tilbagebetaling'
+  es: 'Error al procesar el reembolso'
+
+'You have canceled checkout at @gateway but may resume the checkout process here when you are ready.':
+  dk: 'Du har annulleret betalingen hos @gateway, men kan genoptage checkout-processen her, når du er klar.'
+  es: 'Has cancelado el proceso de pago en @gateway, pero puedes reanudarlo aquí cuando estés listo.'
+
+# CapturePaymentForm
+
+'Amount':
+  dk: 'Beløb'
+  es: 'Cantidad'
+
+# ViaBillLoginForm
+
+'<p>Use this form to log in ViaBill. Once successful, the API key and secret are stored in Drupal configuration.</p>':
+  dk: '<p>Brug denne formular til at logge ind på ViaBill. Når du er logget ind, gemmes API-nøgle og secret i Drupals konfiguration.</p>'
+  es: '<p>Utiliza este formulario para iniciar sesión en ViaBill. Una vez iniciado correctamente, la clave y el secreto de la API se guardan en la configuración de Drupal.</p>'
+
+'Login':
+  dk: 'Log ind'
+  es: 'Iniciar sesión'
+
+'Email':
+  dk: 'E-mail'
+  es: 'Correo electrónico'
+
+'Enter your ViaBill account email.':
+  dk: 'Indtast din ViaBill-kontos e-mailadresse.'
+  es: 'Ingresa el correo electrónico de tu cuenta de ViaBill.'
+
+'Password':
+  dk: 'Adgangskode'
+  es: 'Contraseña'
+
+'Enter your ViaBill account password.':
+  dk: 'Indtast din ViaBill-kontos adgangskode.'
+  es: 'Ingresa la contraseña de tu cuenta de ViaBill.'
+
+'Please enter a valid email address.':
+  dk: 'Angiv en gyldig e-mailadresse.'
+  es: 'Ingresa una dirección de correo electrónico válida.'
+
+'Successfully logged in and obtained ViaBill credentials.':
+  dk: 'Logget ind med succes - ViaBill-legitimationsoplysninger er hentet.'
+  es: 'Inicio de sesión correcto y credenciales de ViaBill obtenidas.'
+
+'Login failed: @error':
+  dk: 'Login mislykkedes: @error'
+  es: 'Fallo al iniciar sesión: @error'
+
+#ViaBillPaymentsForm
+
+'Please wait while you are redirected to the payment server...':
+  dk: 'Vent venligst, mens du bliver omdirigeret til betalingsserveren...'
+  es: 'Espere mientras es redirigido al servidor de pago...'
+
+'If you are not automatically redirected, please <a href="@url">click here</a>.':
+  dk: 'Hvis du ikke automatisk omdirigeres, kan du <a href="@url">klikke her</a>.'
+  es: 'Si no se le redirige automáticamente, por favor <a href="@url">haga clic aquí</a>.'
+
+
+#ViaBillRegisterForm
+
+'<p>Use this form to register for ViaBill. Once successful, the API key and secret are stored in Drupal configuration.</p>':
+  dk: '<p>Brug denne formular til at registrere dig hos ViaBill. Når det lykkes, gemmes API-nøgle og secret i Drupals konfiguration.</p>'
+  es: '<p>Utiliza este formulario para registrarte en ViaBill. Una vez completado, la clave y el secreto de la API se guardan en la configuración de Drupal.</p>'
+
+'Register':
+  dk: 'Registrer'
+  es: 'Registrarse'
+
+'Email':
+  dk: 'E-mail'
+  es: 'Correo electrónico'
+
+'Enter your Email.':
+  dk: 'Indtast din e-mailadresse.'
+  es: 'Ingresa tu correo electrónico.'
+
+'Name':
+  dk: 'Navn'
+  es: 'Nombre'
+
+'Enter your Name.':
+  dk: 'Indtast dit navn.'
+  es: 'Ingresa tu nombre.'
+
+'Country':
+  dk: 'Land'
+  es: 'País'
+
+'Select country':
+  dk: 'Vælg land'
+  es: 'Seleccione un país'
+
+'Denmark':
+  dk: 'Danmark'
+  es: 'Dinamarca'
+
+'Spain':
+  dk: 'Spanien'
+  es: 'España'
+
+'Shop URL':
+  dk: 'Shop webadresse (URL)'
+  es: 'URL de la tienda'
+
+'Enter your Shop URL.':
+  dk: 'Indtast din shops URL.'
+  es: 'Ingresa la URL de tu tienda.'
+
+'Phone':
+  dk: 'Telefon'
+  es: 'Teléfono'
+
+'Enter your phone.':
+  dk: 'Indtast dit telefonnummer.'
+  es: 'Ingresa tu número de teléfono.'
+
+'Tax ID':
+  dk: 'CVR-nummer'
+  es: 'ID Fiscal'
+
+'Enter your Tax ID.':
+  dk: 'Indtast dit CVR-nummer.'
+  es: 'Ingresa tu identificación fiscal.'
+
+'Please enter a valid email address.':
+  dk: 'Angiv en gyldig e-mailadresse.'
+  es: 'Ingresa una dirección de correo electrónico válida.'
+
+'Successfully logged in and obtained ViaBill credentials.':
+  dk: 'Logget ind og ViaBill-oplysninger indhentet.'
+  es: 'Se ha iniciado sesión y obtenido las credenciales de ViaBill con éxito.'
+
+'Registration failed: @error':
+  dk: 'Registrering mislykkedes: @error'
+  es: 'La inscripción falló: @error'

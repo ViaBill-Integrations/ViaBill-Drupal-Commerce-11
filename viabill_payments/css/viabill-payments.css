@@ -1,0 +1,36 @@
+/**
+ * ViaBill payment CSS styles.
+ */
+
+/* Align PriceTags to the right */
+div.viabill_wrapper_alignment_right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+div.viabill_wrapper_alignment_right .viabill-pricetag {
+  display: flex !important;
+  width: 300px;
+  margin-left: auto;
+}
+
+div.viabill_wrapper_alignment_right .viabill-pricetag iframe.viabill {
+  width: 100% !important;
+}
+
+/* Align PriceTags to the center */
+div.viabill_wrapper_alignment_center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+div.viabill_wrapper_alignment_center .viabill-pricetag {
+  display: flex !important;
+  width: 300px;
+}
+
+div.viabill_wrapper_alignment_center .viabill-pricetag iframe.viabill {
+  width: 100% !important;
+}
