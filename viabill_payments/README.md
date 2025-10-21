@@ -6,9 +6,9 @@ This module provides a ViaBill Payments gateway integration for Drupal Commerce,
 
 This module requires the following:
 
-- **Drupal**: 9.x, 10.x, or 11.x
+- **Drupal**: 10.x or 11.x
 - **PHP**: 8.1, 8.2, or 8.3 (8.3 recommended for Drupal 11)
-- **Drupal Commerce**: 2.x or 3.x (including 3.2.x)
+- **Drupal Commerce**: 3.x (including 3.2.x)
 - **Required Modules**:
   - commerce
   - commerce_payment

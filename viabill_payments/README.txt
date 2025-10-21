@@ -41,8 +41,8 @@ REQUIREMENTS
 
 This module requires the following:
 
- - Drupal 9.4 or later (Drupal 10.x supported)
- - Commerce module (2.x)
+ - Drupal 10.x or later (Drupal 11.x supported)
+ - Commerce module (3.x)
  - A valid ViaBill merchant account (https://viabill.com/)
  - API credentials (test/live) from ViaBill
 

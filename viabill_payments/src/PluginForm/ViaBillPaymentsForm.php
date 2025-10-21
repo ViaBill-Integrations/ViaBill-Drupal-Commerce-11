@@ -45,8 +45,8 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
 
       // Generate transaction ID and store in payment.
       $transaction_id = $helper->formatTransactionId($order->id());
-      $payment->setRemoteId($transaction_id);
-      $payment->save();
+      // $payment->setRemoteId($transaction_id);
+      // $payment->save();
 
       // Prepare order data.
       $order_total = $order->getTotalPrice();
