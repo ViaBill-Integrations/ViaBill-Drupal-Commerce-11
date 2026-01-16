@@ -20,16 +20,48 @@ class CapturePaymentForm extends PaymentGatewayFormBase {
 
     /** @var \Drupal\commerce_payment\Entity\PaymentInterface $payment */    
     $payment = $form_state->get('payment') ?: $this->entity;
-    $amount = $payment->getAmount();
+    
+    // Get the payment gateway plugin to access helper methods.
+    /** @var \Drupal\viabill_payments\Plugin\Commerce\PaymentGateway\ViaBillPayments $payment_gateway_plugin */
+    $payment_gateway_plugin = $payment->getPaymentGateway()->getPlugin();
+    
+    // Calculate remaining capturable amount.
+    $authorized_amount = $payment->getAmount();
+    $captured_amount = $this->getCapturedAmount($payment, $payment_gateway_plugin);
+    $remaining_amount = $authorized_amount->subtract($captured_amount);
 
     $form['amount'] = [
       '#type' => 'commerce_price',
       '#title' => $this->t('Amount'),
-      '#default_value' => $amount->toArray(),
+      '#default_value' => $remaining_amount->toArray(),
       '#required' => TRUE,
+      '#description' => $this->t('Authorized: @authorized<br/>Already captured: @captured<br/>Remaining: @remaining', [
+        '@authorized' => $authorized_amount->__toString(),
+        '@captured' => $captured_amount->__toString(),
+        '@remaining' => $remaining_amount->__toString(),
+      ]),
     ];
 
     return $form;
+  }
+
+  /**
+   * Get the total captured amount for a payment.
+   *
+   * @param \Drupal\commerce_payment\Entity\PaymentInterface $payment
+   *   The payment entity.
+   * @param mixed $payment_gateway_plugin
+   *   The payment gateway plugin.
+   *
+   * @return \Drupal\commerce_price\Price
+   *   The total captured amount.
+   */
+  protected function getCapturedAmount($payment, $payment_gateway_plugin) {
+    // Use reflection to access the protected method.
+    $reflection = new \ReflectionClass($payment_gateway_plugin);
+    $method = $reflection->getMethod('getCapturedAmount');
+    $method->setAccessible(TRUE);
+    return $method->invoke($payment_gateway_plugin, $payment);
   }
 
   /**

@@ -686,9 +686,10 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     // Call the parent to get the default operations (like void, refund).
     $operations = parent::buildPaymentOperations($payment);
 
-    // If you have a capturePayment() method and the payment is "authorization",
+    // If you have a capturePayment() method and the payment is "authorization" or "partially_captured",
     // add a custom "Capture" operation.
-    if (method_exists($this, 'capturePayment') && $payment->getState()->value === 'authorization') {
+    $payment_state = $payment->getState()->value;
+    if (method_exists($this, 'capturePayment') && in_array($payment_state, ['authorization', 'partially_captured'])) {
       $operations['capture'] = [
         'title' => $this->t('Capture'),
         'page_title' => $this->t('Capture payment'),
@@ -708,7 +709,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
    * {@inheritdoc}
    */
   public function capturePayment(PaymentInterface $payment, ?Price $amount = NULL) {
-    $this->assertPaymentState($payment, ['authorization']);
+    $this->assertPaymentState($payment, ['authorization', 'partially_captured']);
 
     // Get associated order.
     $order = $payment->getOrder();
@@ -717,8 +718,8 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $authorized_amount = $payment->getAmount();
     $amount = $amount ?: $authorized_amount;
 
-    // Get amount already captured (0 if first capture)
-    $captured_amount = new Price(0, $authorized_amount->getCurrencyCode());
+    // Get amount already captured from payment metadata.
+    $captured_amount = $this->getCapturedAmount($payment);
 
     // Calculate remaining authorized amount.
     $remaining_amount = $authorized_amount->subtract($captured_amount);
@@ -751,6 +752,9 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
         // Update the total captured amount.
         $new_captured_amount = $captured_amount->add($amount);
 
+        // Store the new captured amount in payment metadata.
+        $this->setCapturedAmount($payment, $new_captured_amount);
+
         // Determine if this is a full or partial capture.
         if ($new_captured_amount->equals($authorized_amount)) {
           // Full amount captured.
@@ -759,15 +763,14 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
           $this->messenger()->addStatus($this->t('Payment fully captured'));
         }
         else {
-          // Partial amount captured.
-          // Instead of partially_captured.
-          $payment->setState('completed');
+          // Partial amount captured - keep in partially_captured state.
+          $payment->setState('partially_captured');
           $this->messenger()->addStatus(
             $this->t('Payment partially captured: @captured of @authorized', [
               '@captured' => $new_captured_amount->__toString(),
               '@authorized' => $authorized_amount->__toString(),
             ])
-                  );
+          );
 
           // Add permanent activity log to the order
           // (requires commerce_log module)
@@ -833,7 +836,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
    * {@inheritdoc}
    */
   public function refundPayment(PaymentInterface $payment, ?Price $amount = NULL) {
-    $this->assertPaymentState($payment, ['completed', 'partially_refunded']);
+    $this->assertPaymentState($payment, ['completed', 'partially_refunded', 'partially_captured']);
 
     // Call ViaBill API to process the refund.
     $helper = new ViaBillHelper();
@@ -860,7 +863,14 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
         $old_refunded_amount = $payment->getRefundedAmount();
         $new_refunded_amount = $old_refunded_amount->add($amount);
 
-        if ($new_refunded_amount->lessThan($payment->getAmount())) {
+        // For partially captured payments, compare against captured amount.
+        // For fully captured payments, compare against total payment amount.
+        $captured_amount = $this->getCapturedAmount($payment);
+        $refundable_amount = $captured_amount->greaterThan(new Price('0', $captured_amount->getCurrencyCode())) 
+          ? $captured_amount 
+          : $payment->getAmount();
+
+        if ($new_refunded_amount->lessThan($refundable_amount)) {
           $payment->setState('partially_refunded');
         }
         else {
@@ -921,6 +931,61 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $redirect_url = Url::fromRoute('commerce_cart.page');
     return new RedirectResponse($redirect_url->toString());
 
+  }
+
+  /**
+   * Get the total captured amount for a payment.
+   *
+   * @param \Drupal\commerce_payment\Entity\PaymentInterface $payment
+   *   The payment entity.
+   *
+   * @return \Drupal\commerce_price\Price
+   *   The total captured amount.
+   */
+  protected function getCapturedAmount(PaymentInterface $payment) {
+    // Use the order's data field to store captured amount keyed by payment ID.
+    $order = $payment->getOrder();
+    $payment_id = $payment->id();
+    
+    // Get the captured amounts array from order data.
+    $captured_amounts = $order->getData('viabill_captured_amounts', []);
+    
+    if (isset($captured_amounts[$payment_id])) {
+      $captured_data = $captured_amounts[$payment_id];
+      if (isset($captured_data['number']) && isset($captured_data['currency_code'])) {
+        return new Price($captured_data['number'], $captured_data['currency_code']);
+      }
+    }
+    
+    // Default to 0 if no captured amount is stored.
+    return new Price('0', $payment->getAmount()->getCurrencyCode());
+  }
+
+  /**
+   * Set the total captured amount for a payment.
+   *
+   * @param \Drupal\commerce_payment\Entity\PaymentInterface $payment
+   *   The payment entity.
+   * @param \Drupal\commerce_price\Price $amount
+   *   The total captured amount.
+   */
+  protected function setCapturedAmount(PaymentInterface $payment, Price $amount) {
+    // Store captured amount in the order's data field keyed by payment ID.
+    $order = $payment->getOrder();
+    $payment_id = $payment->id();
+    
+    // Get existing captured amounts.
+    $captured_amounts = $order->getData('viabill_captured_amounts', []);
+    
+    // Update the captured amount for this payment.
+    $captured_amounts[$payment_id] = [
+      'number' => $amount->getNumber(),
+      'currency_code' => $amount->getCurrencyCode(),
+    ];
+    
+    // Save back to order.
+    $order->setData('viabill_captured_amounts', $captured_amounts);
+    $order->save();
   }
 
 }
