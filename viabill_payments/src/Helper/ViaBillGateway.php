@@ -9,7 +9,7 @@ class ViaBillGateway {
   /**
    * The current API protocol version.
    */
-  private const API_PROTOCOL = '3.0';
+  private const API_PROTOCOL = '3.1';
 
   /**
    * Whether are test transactions or live payments.
@@ -302,7 +302,7 @@ class ViaBillGateway {
 
     if ($request) {
       if ($type == 'checkout') {
-        $response = ViaBillOutgoingRequests::requestWithoutRedirect($request['endpoint'], $request['method'], $request['data'], $this->testMode);
+        $response = ViaBillOutgoingRequests::requestWithoutRedirect($request['endpoint'], $request['method'], $data, $this->testMode);
       }
       else {
         $response = ViaBillOutgoingRequests::request($request['endpoint'], $request['method'], $request['data'], $this->testMode, $headers, FALSE);
@@ -337,7 +337,7 @@ class ViaBillGateway {
 
       foreach ($ed['required_fields'] as $field) {
         $isTest = ($field === 'test');
-        // Check for signature/md5check fields.
+        // Check for signature/sha256check fields.
         if (array_key_exists($field, $ed)) {
           $format = $ed[$field];
           // Parse the format to generate a signature if one is required.
@@ -349,7 +349,7 @@ class ViaBillGateway {
             $this->helper->log($error_msg, 'error');
             return FALSE;
           }
-          $requestData[$field] = md5($format);
+          $requestData[$field] = hash('sha256', $format);
           // Process the remaining required fields.
         }
         elseif (array_key_exists($field, $data)) {
@@ -430,8 +430,8 @@ class ViaBillGateway {
     unset($data['signature']);
     // Parse the format and data into a populated string.
     $format = $this->parseFormat($format, $data);
-    // Calculate the MD5 checksum of the string.
-    $calculated = md5($format);
+    // Calculate the SHA256 checksum of the string.
+    $calculated = hash('sha256', $format);
     if ($calculated === $sig) {
       return TRUE;
     }

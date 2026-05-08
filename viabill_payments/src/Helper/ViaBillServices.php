@@ -72,10 +72,10 @@ class ViaBillServices {
         'cancel_url',
         'callback_url',
         'test',
-        'md5check',
+        'sha256check',
       ],
       'optional_fields' => ['customParams', 'cartParams'],
-      'md5check'        => '{apikey}#{amount}#{currency}#{transaction}#{order_number}#{success_url}#{cancel_url}#{secret}',
+      'sha256check'        => '{apikey}#{amount}#{currency}#{transaction}#{order_number}#{success_url}#{cancel_url}#{secret}',
       'status_codes'    => [
         200 => 'messages.viabillApiMessages.successfulRequest',
         204 => 'messages.viabillApiMessages.noContentResponse',

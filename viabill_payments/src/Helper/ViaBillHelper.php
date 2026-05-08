@@ -7,12 +7,7 @@ use Drupal\commerce_payment\Entity\PaymentGatewayInterface;
 /**
  * A helper class for various ViaBill utility methods.
  */
-class ViaBillHelper {
-
-  /**
-   * The current API protocol version.
-   */
-  private const API_PROTOCOL = '3.0';
+class ViaBillHelper { 
 
   /**
    * The current API protocol version.
@@ -103,7 +98,7 @@ class ViaBillHelper {
     $this->transactionType = '';
     $this->testMode = ViaBillConstants::TEST_MODE_ON;
     $this->tbyb = ViaBillConstants::TBYB_OFF;
-  }
+  }  
 
   /**
    * Method to retrieve the test mode (true or false)
@@ -215,7 +210,7 @@ class ViaBillHelper {
    */
   public function formatTestMode($mode) {
     if (empty($mode)) {
-      return ViaBillConstants::TEST_MODE_ON;
+      return ViaBillConstants::TEST_MODE_OFF;
     }
     elseif (($mode == 'test')||($mode == 'true')||($mode == '1')||($mode == 1)) {
       return ViaBillConstants::TEST_MODE_ON;

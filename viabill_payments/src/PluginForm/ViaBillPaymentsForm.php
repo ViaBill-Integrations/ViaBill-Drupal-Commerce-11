@@ -7,6 +7,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\commerce_order\Entity\OrderInterface;
 use Drupal\viabill_payments\Helper\ViaBillHelper;
 use Drupal\viabill_payments\Helper\ViaBillGateway;
+use Drupal\viabill_payments\Helper\ViaBillConstants;
 use Drupal\Core\Url;
 use Drupal\commerce_payment\Exception\PaymentGatewayException;
 
@@ -75,37 +76,54 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
       $api_key = $configuration['api_key'];
       $secret = $configuration['api_secret'];
 
-      $signature_data = [
-        $api_key,
-        $order_amount,
-        $order_currency,
-        $transaction_id,
-        $order_id,
-        $success_url,
-        $cancel_url,
-        $secret,
-      ];
-      $md5check = md5(implode('#', $signature_data));
+      // Compute SHA256 checksum for integrity (using a combination of fields and secret)        
+      $testModeEnabled = $helper->getFormattedTestMode();
+      if ($testModeEnabled == ViaBillConstants::TEST_MODE_ON) {
+          $signature_data = [
+            $api_key,
+            $order_amount,
+            $order_currency,
+            $transaction_id,
+            $order_id,
+            $success_url,
+            $cancel_url,
+            $secret,
+            'true'
+          ];
+      } else {
+          $signature_data = [
+            $api_key,
+            $order_amount,
+            $order_currency,
+            $transaction_id,
+            $order_id,
+            $success_url,
+            $cancel_url,
+            $secret,
+          ];
+      }
+                  
+      $checksum_input = trim(implode('#', $signature_data));	
+      $sha256check = hash('sha256', $checksum_input);
 
-      // Prepare API request payload.
-      $request_data = [
-        'order_number' => $order_id,
-        'apikey' => $api_key,
-        'secret' => $secret,
+      // Prepare API request payload.          
+      $request_data = [       
+        'protocol' => '3.1',
         'transaction' => $transaction_id,
         'amount' => $order_amount,
         'currency' => $order_currency,
+        'test' => $helper->getFormattedTestMode(),
+        'sha256check' => $sha256check,
+        'apikey' => $api_key,
+        'order_number' => $order_id,
         'success_url' => $success_url,
         'cancel_url' => $cancel_url,
         'callback_url' => $callback_url,
-        'test' => $helper->getFormattedTestMode(),
-        'customParams' => $customer_info, // not json_encode(...)
+        // 'tbyb' => $helper->getFormattedTbyb(),
+        // 'customParams' => $customer_info, // not json_encode(...)
         // 'cartParams' => (empty($cart_info)) ? '' : json_encode($cart_info),
-        'md5check' => $md5check,
-        'tbyb' => $helper->getFormattedTbyb(),
-        'platform' => $helper->getViaBillApiPlatform(),
       ];
-
+     
       $order->setData('viabill_transaction_id', $transaction_id);
 
       // Set order to pending status using state machine transitions.

@@ -1,15 +1,15 @@
 # Changelog
 
-## Version 2.0.1 - Drupal 11 and Commerce 3.2 Compatibility Update
+## Version 2.0.3 - Drupal 11 and Commerce 3.2 Compatibility Update
 
 ### Changed
-- Updated `core_version_requirement` in `viabill_payments.info.yml` to support Drupal 11 (`^9 || ^10 || ^11`)
+- Updated `core_version_requirement` in `viabill_payments.info.yml` to support Drupal 11 (`^10 || ^11`)
 - Updated `composer.json` to support Commerce 3.x (`^2.0 || ^3.0`)
 - Replaced deprecated `REQUEST_TIME` constant with `$this->time->getRequestTime()` in payment capture method
 - Ensured PHP 8.3 compatibility by verifying no deprecated PHP functions are used
 
 ### Technical Details
-- **Drupal Compatibility**: Now supports Drupal 9, 10, and 11
+- **Drupal Compatibility**: Now supports Drupal 10, and 11
 - **Commerce Compatibility**: Now supports Commerce 2.x and 3.x (including 3.2.x)
 - **PHP Compatibility**: Compatible with PHP 8.1, 8.2, and 8.3
 - **Constructor**: Maintains proper dependency injection with nullable `MinorUnitsConverterInterface`
