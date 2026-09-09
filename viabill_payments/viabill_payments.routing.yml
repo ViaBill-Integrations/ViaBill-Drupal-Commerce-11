@@ -6,18 +6,10 @@ viabill_payments.callback:
     _access: 'TRUE'
   methods: [POST]
 
-viabill_payments.login_form:
-  path: '/admin/config/viabill/login'
+viabill_payments.account_form:
+  path: '/admin/config/viabill/account'
   defaults:
-    _form: '\Drupal\viabill_payments\PluginForm\ViaBillLoginForm'
-    _title: 'ViaBill Login'
+    _form: '\Drupal\viabill_payments\PluginForm\ViaBillAccountForm'
+    _title: 'ViaBill Account Credentials'
   requirements:
     _permission: 'administer commerce_payment_gateway'
-
-viabill_payments.register_form:
-  path: '/admin/config/viabill/register'
-  defaults:
-    _form: '\Drupal\viabill_payments\PluginForm\ViaBillRegisterForm'
-    _title: 'ViaBill Register'
-  requirements:
-    _permission: 'administer commerce_payment_gateway'    

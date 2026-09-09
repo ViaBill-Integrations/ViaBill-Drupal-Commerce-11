@@ -35,21 +35,22 @@ Or navigate to **Extend** in the Drupal admin interface and enable "ViaBill Paym
 
 ## Configuration
 
-### Step 1: Register or Login with ViaBill
+### Step 1: Enter your ViaBill Account Credentials
 
-Before configuring the payment gateway, you need to obtain API credentials from ViaBill:
+Before configuring the payment gateway, you need to obtain your API key, API secret and PriceTag script from ViaBill (e.g. from your ViaBill merchant account). The module no longer contacts the ViaBill server to register or log in; you enter these values manually:
 
 1. Navigate to **Commerce** → **Configuration** → **Payment gateways**
 2. Click **Add payment gateway**
 3. Select **ViaBill Payments** as the plugin
-4. You will see a notice prompting you to log in or register with ViaBill
-5. Click the login or register link to obtain your API credentials
+4. Enter your **API Key**, **API Secret** and **PriceTag Script** in the "ViaBill Account Credentials" section at the top of the settings page
+
+Alternatively, you can enter the credentials on the standalone form at `/admin/config/viabill/account`.
 
 ### Step 2: Configure the Payment Gateway
 
-Once you have your API credentials:
+Once you have entered your API credentials:
 
-1. The API Key and API Secret will be automatically populated from your ViaBill account
+1. The API Key, API Secret and PriceTag script are stored in the Drupal configuration (the API secret is never displayed back on the page)
 2. Configure the following settings:
    - **Transaction Type**: Choose between "Authorize Only" or "Authorize and Capture"
    - **PriceTag Settings**: Configure how ViaBill price tags are displayed on your site

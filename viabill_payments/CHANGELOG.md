@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 2.0.3 - Drupal 11 and Commerce 3.2 Compatibility Update
+## Version 2.1.0 - Drupal 11 and Commerce 3.2 Compatibility Update
 
 ### Changed
 - Updated `core_version_requirement` in `viabill_payments.info.yml` to support Drupal 11 (`^10 || ^11`)

@@ -86,7 +86,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildConfigurationForm($form, $form_state);
 
-    // Call ViaBill API.
+    // Helper utilities and ViaBill API client.
     $helper = new ViaBillHelper();
     $gateway = new ViaBillGateway();
 
@@ -94,27 +94,26 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $pricetag_twig_snippet = "{% if viabill_pricetag %} {{ viabill_pricetag }} {% endif %}";
     $theme = \Drupal::theme()->getActiveTheme()->getName();
 
-    // Instead of forcing the user to type in the API Key/Secret again,
-    // fetch them from 'viabill_payments.settings'.
+    // Load the stored credentials. The plugin configuration is the primary
+    // source; the global 'viabill_payments.settings' config acts as a
+    // fallback (e.g. when the credentials were entered through the
+    // standalone ViaBill Account Credentials form).
     $storedConfig = $this->configFactory->get('viabill_payments.settings');
-    $apiKey = $storedConfig->get('api_key') ?? '';
-    $apiSecret = $storedConfig->get('api_secret') ?? '';
-    $priceTagScript = $storedConfig->get('viabill_pricetag') ?? '';
-    $email = $storedConfig->get('viabill_email') ?? '';
+    $apiKey = $this->configuration['api_key'] ?: ($storedConfig->get('api_key') ?? '');
+    $apiSecret = $this->configuration['api_secret'] ?: ($storedConfig->get('api_secret') ?? '');
+    $priceTagScript = $this->configuration['viabill_pricetag'] ?: ($storedConfig->get('viabill_pricetag') ?? '');
 
-    // If they're not set, instruct user to go to the login form first:
     if (empty($apiKey) || empty($apiSecret)) {
+      // No credentials yet: the merchant can enter them manually in the
+      // "ViaBill Account Credentials" section below.
       $form['notice'] = [
         '#markup' => Markup::create('<div style="background-color: #c8eafd;border: 1px solid #afd9db;padding: 15px;border-radius: 4px;margin: 10px 0;color: #043685;">' . $this->t(
-          'Please <a href=":login_link">log in</a> or <a href=":register_link">register</a> with ViaBill to retrieve your API credentials before configuring the payment gateway.',
+          'Your ViaBill account credentials are missing. Please enter your API key, API secret and PriceTag script in the <strong>ViaBill Account Credentials</strong> section below. You can find these values in your ViaBill merchant account. Alternatively, you can use the <a href=":account_link">ViaBill Account Credentials</a> form.',
           [
-            ':login_link' => Url::fromRoute('viabill_payments.login_form', [], ['absolute' => TRUE])->toString(),
-            ':register_link' => Url::fromRoute('viabill_payments.register_form', [], ['absolute' => TRUE])->toString(),
+            ':account_link' => Url::fromRoute('viabill_payments.account_form', [], ['absolute' => TRUE])->toString(),
           ]
         ) . '</div>'),
       ];
-
-      return $form;
     }
     else {
       $viabill_link = NULL;
@@ -122,7 +121,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
         'key' => $apiKey,
       ];
       $return = $gateway->myViabill($my_data);
-      if ($return) {
+      if ($return && isset($return['url'])) {
         $viabill_link = $return['url'];
       }
 
@@ -160,19 +159,70 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
         }
       }
 
-      $form['notice'] = [
-        '#markup' => Markup::create('<div style="background-color: #c8eafd;border: 1px solid #afd9db;padding: 15px;border-radius: 4px;margin: 10px 0;color: #043685;">' . $this->t(
-          'You are currently logged in as <strong>:email</strong>. Not you? <a href=":login_link">log in</a> or <a href=":register_link">register</a> with ViaBill to retrieve your new API credentials.<br/>
-          You can visit your ViaBill account <a href=":viabill_link" target="_blank">here</a>',
-          [
-            ':email' => $email,
-            ':login_link' => Url::fromRoute('viabill_payments.login_form', [], ['absolute' => TRUE])->toString(),
-            ':register_link' => Url::fromRoute('viabill_payments.register_form', [], ['absolute' => TRUE])->toString(),
-            ':viabill_link' => $viabill_link,
-          ]
-        ) . '</div>'),
-      ];
+      if (!empty($viabill_link)) {
+        $form['notice'] = [
+          '#markup' => Markup::create('<div style="background-color: #c8eafd;border: 1px solid #afd9db;padding: 15px;border-radius: 4px;margin: 10px 0;color: #043685;">' . $this->t(
+            'Your ViaBill account credentials are configured. You can update them in the <strong>ViaBill Account Credentials</strong> section below.<br/>
+            You can visit your ViaBill account <a href=":viabill_link" target="_blank">here</a>',
+            [
+              ':viabill_link' => $viabill_link,
+            ]
+          ) . '</div>'),
+        ];
+      }
+      else {
+        $form['notice'] = [
+          '#markup' => Markup::create('<div style="background-color: #c8eafd;border: 1px solid #afd9db;padding: 15px;border-radius: 4px;margin: 10px 0;color: #043685;">' . $this->t(
+            'Your ViaBill account credentials are configured. You can update them in the <strong>ViaBill Account Credentials</strong> section below.'
+          ) . '</div>'),
+        ];
+      }
     }
+
+    // Group 0: Account Credentials (shown at the top of the settings page).
+    // The merchant obtains the API key, API secret and PriceTag script
+    // elsewhere (e.g. from the ViaBill merchant portal) and enters them
+    // here manually.
+    $form['credentials'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('ViaBill Account Credentials'),
+      '#description' => $this->t('Enter the API key, API secret and PriceTag script you obtained from ViaBill. All three values are required for the payment gateway and the PriceTags to work.'),
+    ];
+
+    $form['credentials']['api_key'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('API Key'),
+      '#description' => $this->t('Your ViaBill API key.'),
+      '#default_value' => $apiKey,
+      '#maxlength' => 2048,
+      '#required' => TRUE,
+      '#attributes' => ['autocomplete' => 'off'],
+    ];
+
+    // The API secret is never printed back to the page. If a secret is
+    // already stored the field shows a masked placeholder and can be left
+    // empty to keep the current value.
+    $form['credentials']['api_secret'] = [
+      '#type' => 'password',
+      '#title' => $this->t('API Secret'),
+      '#description' => !empty($apiSecret)
+        ? $this->t('An API secret is already saved (hidden for security). Leave this field empty to keep it.')
+        : $this->t('Your ViaBill API secret.'),
+      '#required' => empty($apiSecret),
+      '#attributes' => [
+        'autocomplete' => 'new-password',
+        'placeholder' => !empty($apiSecret) ? '********' : '',
+      ],
+    ];
+
+    $form['credentials']['viabill_pricetag'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('PriceTag Script'),
+      '#description' => $this->t('Paste the whole PriceTag script snippet provided by ViaBill, including the opening and closing script tags.'),
+      '#default_value' => $priceTagScript,
+      '#rows' => 4,
+      '#required' => TRUE,
+    ];
 
     // Group 1: Payment Preferences.
     $form['payment_preferences'] = [
@@ -191,27 +241,8 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#default_value' => $this->configuration['transaction_type'],
     ];
 
-    // Group 2: App Credentials.
-    $form['credentials'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('ViaBill Payments Credentials'),
-      '#description' => $this->t('API credentials for connecting to the ViaBill payment service.'),
-    ];
-
-    $form['credentials']['api_key'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('API Key'),
-      '#default_value' => $this->configuration['api_key'],
-      '#disabled' => TRUE,
-      '#maxlength' => 2048,
-    ];
-
-    $form['credentials']['api_secret'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('API Secret'),
-      '#default_value' => $this->configuration['api_secret'],
-      '#disabled' => TRUE,
-    ];
+    // Group 2: App Credentials — moved to the "ViaBill Account Credentials"
+    // fieldset at the top of the form (see above).
 
     // Group 3: PriceTags.
     $form['pricetags'] = [
@@ -471,13 +502,8 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#markup' => Markup::create('<hr/>'),
     ];
 
-    $form['pricetags']['viabill_pricetag'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('PriceTag Script'),
-      '#default_value' => $this->configuration['viabill_pricetag'],
-      '#rows' => 3,
-      '#disabled' => TRUE,
-    ];
+    // Note: the PriceTag script itself is now entered manually in the
+    // "ViaBill Account Credentials" fieldset at the top of this form.
 
     $form['pricetags']['viabill_pricetag_custom_css'] = [
       '#type' => 'textarea',
@@ -620,13 +646,56 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
   /**
    * {@inheritdoc}
    */
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
+    parent::validateConfigurationForm($form, $form_state);
+    $values = $form_state->getValue($form['#parents']);
+
+    $api_key = trim($values['credentials']['api_key'] ?? '');
+    $api_secret = trim($values['credentials']['api_secret'] ?? '');
+    $pricetag = trim($values['credentials']['viabill_pricetag'] ?? '');
+
+    if ($api_key === '') {
+      $form_state->setError($form['credentials']['api_key'], $this->t('The ViaBill API key is required.'));
+    }
+
+    // An empty secret is only allowed when a secret is already stored
+    // (it means "keep the current one").
+    if ($api_secret === '') {
+      $storedConfig = $this->configFactory->get('viabill_payments.settings');
+      $stored_secret = $this->configuration['api_secret'] ?: ($storedConfig->get('api_secret') ?? '');
+      if (empty($stored_secret)) {
+        $form_state->setError($form['credentials']['api_secret'], $this->t('The ViaBill API secret is required.'));
+      }
+    }
+
+    if ($pricetag === '') {
+      $form_state->setError($form['credentials']['viabill_pricetag'], $this->t('The ViaBill PriceTag script is required.'));
+    }
+    elseif (stripos($pricetag, '<script') === FALSE) {
+      $form_state->setError($form['credentials']['viabill_pricetag'], $this->t('The PriceTag script does not look like a valid script snippet. Please paste the whole snippet, including the opening and closing script tags.'));
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     parent::submitConfigurationForm($form, $form_state);
     $values = $form_state->getValue($form['#parents']);
 
-    $this->configuration['api_key'] = $values['credentials']['api_key'];
-    $this->configuration['api_secret'] = $values['credentials']['api_secret'];
-    $this->configuration['viabill_pricetag'] = $values['pricetags']['viabill_pricetag'];
+    $api_key = trim($values['credentials']['api_key'] ?? '');
+    $api_secret = trim($values['credentials']['api_secret'] ?? '');
+    $pricetag = trim($values['credentials']['viabill_pricetag'] ?? '');
+
+    // An empty secret means "keep the currently stored secret".
+    if ($api_secret === '') {
+      $storedConfig = $this->configFactory->get('viabill_payments.settings');
+      $api_secret = $this->configuration['api_secret'] ?: ($storedConfig->get('api_secret') ?? '');
+    }
+
+    $this->configuration['api_key'] = $api_key;
+    $this->configuration['api_secret'] = $api_secret;
+    $this->configuration['viabill_pricetag'] = $pricetag;
     $this->configuration['pricetag_country'] = $values['pricetags']['pricetag_country'];
     $this->configuration['pricetag_language'] = $values['pricetags']['pricetag_language'];
     $this->configuration['product_pricetag_alignment'] = $values['pricetags']['product_pricetag_alignment'];
@@ -641,9 +710,14 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $this->configuration['viabill_pricetag_custom_css'] = $values['pricetags']['viabill_pricetag_custom_css'];
     $this->configuration['transaction_type'] = $values['payment_preferences']['transaction_type'];
 
-    // Global config (accessible from hooks and elsewhere).
+    // Global config (accessible from hooks and elsewhere). The credentials
+    // are stored here as well because the pricetag hooks in
+    // viabill_payments.module read the PriceTag script from this config.
     $global_config = \Drupal::service('config.factory')->getEditable('viabill_payments.settings');
     $global_config
+      ->set('api_key', $api_key)
+      ->set('api_secret', $api_secret)
+      ->set('viabill_pricetag', $pricetag)
       ->set('product_pricetag_alignment', $values['pricetags']['product_pricetag_alignment'])
       ->set('product_pricetag_width', $values['pricetags']['product_pricetag_width'])
       ->set('product_pricetag_auto', $values['pricetags']['product_pricetag_auto'])
