@@ -9,6 +9,7 @@ use Drupal\viabill_payments\Helper\ViaBillHelper;
 use Drupal\viabill_payments\Helper\ViaBillGateway;
 use Drupal\viabill_payments\Helper\ViaBillConstants;
 use Drupal\Core\Url;
+use Drupal\Core\Render\Markup;
 use Drupal\commerce_payment\Exception\PaymentGatewayException;
 
 /**
@@ -38,6 +39,11 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
       $gateway_plugin = $this->plugin;
       $configuration = $gateway_plugin->getConfiguration();
       $mode = $gateway_plugin->getMode();
+
+      // The secret may only be kept in the module's own (State API) copy.
+      if (empty($configuration['api_secret'])) {
+        $configuration['api_secret'] = ViaBillHelper::getStoredSecret();
+      }
 
       // Validate required configuration.
       if (empty($configuration['api_key']) || empty($configuration['api_secret'])) {
@@ -72,7 +78,8 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
       $customer_info = $this->buildCustomerData($order);
       $cart_info = $this->buildCartData($order);
 
-      $order_id = $order->id();
+      // The order number ViaBill sees, based on the merchant's order number.
+      $order_id = $helper->buildCheckoutOrderNumber($order, $configuration['order_number_prefix'] ?? '');
       $api_key = $configuration['api_key'];
       $secret = $configuration['api_secret'];
 
@@ -140,10 +147,15 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
       $response = $gateway->checkout($request_data);
 
       if (empty($response['redirect_url'])) {
-        throw new PaymentGatewayException('Invalid gateway response: Missing redirect URL');
+        throw new PaymentGatewayException('Invalid gateway response: ' . ($response['error'] ?? $response['message'] ?? 'Missing redirect URL'));
       }
 
       $redirect_url = $response['redirect_url'];
+
+      // Only ever send the customer to an HTTPS address of ViaBill.
+      if (!$this->isAllowedRedirectUrl($redirect_url)) {
+        throw new PaymentGatewayException('Invalid gateway response: unexpected redirect URL');
+      }
 
       return $this->buildRedirectForm(
         $form,
@@ -155,8 +167,10 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
 
     }
     catch (\Exception $e) {
-      \Drupal::logger('viabill_payments')->error('Error processing payment:' . $e->getMessage());
-      throw new PaymentGatewayException('Error processing payment: ' . $e->getMessage());
+      // Commerce logs this exception too, so never let credentials into it.
+      $error = ViaBillHelper::redact($e->getMessage());
+      \Drupal::logger('viabill_payments')->error('Error processing payment: @error', ['@error' => $error]);
+      throw new PaymentGatewayException('Error processing payment: ' . $error);
     }
   }
 
@@ -176,22 +190,50 @@ class ViaBillPaymentsForm extends BasePaymentOffsiteForm {
       '#markup' => $this->t('Please wait while you are redirected to the payment server...'),
     ];
 
-    // Add the JavaScript to redirect using window.location.href.
+    // Add the JavaScript to redirect using window.location.href. The URL is
+    // JSON encoded (with HTML-significant characters escaped), so it can not
+    // break out of the script.
     $form['#attached']['html_head'][] = [
       [
         '#type' => 'html_tag',
         '#tag' => 'script',
-        '#value' => 'window.location.href = "' . $redirect_url . '";',
+        '#value' => Markup::create('window.location.href = ' . json_encode((string) $redirect_url, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES) . ';'),
       ],
       'payment_redirect_script',
     ];
 
-    // Add a fallback link in case JavaScript is disabled.
+    // Add a fallback link in case JavaScript is disabled (":url" placeholders
+    // are escaped and stripped of dangerous protocols).
     $form['redirect_container']['fallback'] = [
-      '#markup' => '<p>' . $this->t('If you are not automatically redirected, please <a href="@url">click here</a>.', ['@url' => $redirect_url]) . '</p>',
+      '#markup' => '<p>' . $this->t('If you are not automatically redirected, please <a href=":url">click here</a>.', [':url' => $redirect_url]) . '</p>',
     ];
 
     return $form;
+  }
+
+  /**
+   * Check that a checkout redirect URL is an HTTPS address of ViaBill.
+   *
+   * @param string $url
+   *   The redirect URL returned by the ViaBill API.
+   *
+   * @return bool
+   *   TRUE if the customer may be sent to this URL.
+   */
+  protected function isAllowedRedirectUrl($url) {
+    if (!is_string($url) || $url === '') {
+      return FALSE;
+    }
+
+    $parts = parse_url($url);
+    if (empty($parts['scheme']) || strtolower($parts['scheme']) !== 'https' || empty($parts['host'])) {
+      return FALSE;
+    }
+
+    $host = strtolower($parts['host']);
+    $suffix = ViaBillConstants::ALLOWED_REDIRECT_HOST_SUFFIX;
+
+    return $host === $suffix || substr($host, -strlen('.' . $suffix)) === '.' . $suffix;
   }
 
   /**

@@ -295,9 +295,9 @@
   dk: 'Vent venligst, mens du bliver omdirigeret til betalingsserveren...'
   es: 'Espere mientras es redirigido al servidor de pago...'
 
-'If you are not automatically redirected, please <a href="@url">click here</a>.':
-  dk: 'Hvis du ikke automatisk omdirigeres, kan du <a href="@url">klikke her</a>.'
-  es: 'Si no se le redirige automáticamente, por favor <a href="@url">haga clic aquí</a>.'
+'If you are not automatically redirected, please <a href=":url">click here</a>.':
+  dk: 'Hvis du ikke automatisk omdirigeres, kan du <a href=":url">klikke her</a>.'
+  es: 'Si no se le redirige automáticamente, por favor <a href=":url">haga clic aquí</a>.'
 
 
 #ViaBillRegisterForm
@@ -377,3 +377,112 @@
 'Registration failed: @error':
   dk: 'Registrering mislykkedes: @error'
   es: 'La inscripción falló: @error'
+
+'No ViaBill account credentials yet?':
+  dk: 'Har du endnu ikke dine ViaBill-kontooplysninger?'
+  es: '¿Aún no tiene las credenciales de su cuenta ViaBill?'
+
+'Fill in the ViaBill online signup form to get your API key, API secret and PriceTag script.':
+  dk: 'Udfyld ViaBills online tilmeldingsformular for at få din API-nøgle, din API-secret og dit Pricetag-script.'
+  es: 'Complete el formulario de registro en línea de ViaBill para obtener su clave de API, su secreto de API y el script de la etiqueta de precio.'
+
+'Go to the ViaBill signup form':
+  dk: 'Gå til ViaBills tilmeldingsformular'
+  es: 'Ir al formulario de registro de ViaBill'
+
+'The ViaBill API secret is no longer stored in the viabill_payments.settings configuration.':
+  dk: 'ViaBill API-secret gemmes ikke længere i konfigurationen viabill_payments.settings.'
+  es: 'El secreto de API de ViaBill ya no se guarda en la configuración viabill_payments.settings.'
+
+'Your ViaBill account credentials are missing. Please enter your API key, API secret and PriceTag script in the <strong>ViaBill Account Credentials</strong> section below. You can find these values in your ViaBill merchant account. Alternatively, you can use the <a href=":account_link">ViaBill Account Credentials</a> form.':
+  dk: 'Dine ViaBill-kontooplysninger mangler. Indtast din API-nøgle, din API-secret og dit Pricetag-script i sektionen <strong>ViaBill-kontooplysninger</strong> nedenfor. Du finder disse værdier i din ViaBill-forhandlerkonto. Du kan også bruge formularen <a href=":account_link">ViaBill-kontooplysninger</a>.'
+  es: 'Faltan las credenciales de su cuenta ViaBill. Introduzca su clave de API, su secreto de API y el script de la etiqueta de precio en la sección <strong>Credenciales de la cuenta ViaBill</strong> a continuación. Encontrará estos valores en su cuenta de comerciante de ViaBill. También puede utilizar el formulario <a href=":account_link">Credenciales de la cuenta ViaBill</a>.'
+
+'Your ViaBill account credentials are configured. You can update them in the <strong>ViaBill Account Credentials</strong> section below.<br/>
+            You can visit your ViaBill account <a href=":viabill_link" target="_blank">here</a>':
+  dk: 'Dine ViaBill-kontooplysninger er konfigureret. Du kan opdatere dem i sektionen <strong>ViaBill-kontooplysninger</strong> nedenfor.<br/>Du kan besøge din ViaBill-konto <a href=":viabill_link" target="_blank">her</a>.'
+  es: 'Las credenciales de su cuenta ViaBill están configuradas. Puede actualizarlas en la sección <strong>Credenciales de la cuenta ViaBill</strong> a continuación.<br/>Puede acceder a su cuenta de ViaBill <a href=":viabill_link" target="_blank">aquí</a>.'
+
+'Your ViaBill account credentials are configured. You can update them in the <strong>ViaBill Account Credentials</strong> section below.':
+  dk: 'Dine ViaBill-kontooplysninger er konfigureret. Du kan opdatere dem i sektionen <strong>ViaBill-kontooplysninger</strong> nedenfor.'
+  es: 'Las credenciales de su cuenta ViaBill están configuradas. Puede actualizarlas en la sección <strong>Credenciales de la cuenta ViaBill</strong> a continuación.'
+
+'ViaBill Account Credentials':
+  dk: 'ViaBill-kontooplysninger'
+  es: 'Credenciales de la cuenta ViaBill'
+
+'Enter the API key, API secret and PriceTag script you obtained from ViaBill. All three values are required for the payment gateway and the PriceTags to work.':
+  dk: 'Indtast den API-nøgle, API-secret og det Pricetag-script, du har fået fra ViaBill. Alle tre værdier er påkrævet, for at betalingsløsningen og Pricetags kan fungere.'
+  es: 'Introduzca la clave de API, el secreto de API y el script de la etiqueta de precio que ha recibido de ViaBill. Los tres valores son obligatorios para que funcionen la pasarela de pago y las etiquetas de precio.'
+
+'Your ViaBill API key.':
+  dk: 'Din ViaBill API-nøgle.'
+  es: 'Su clave de API de ViaBill.'
+
+'An API secret is already saved (hidden for security). Leave this field empty to keep it.':
+  dk: 'En API-secret er allerede gemt (skjult af sikkerhedshensyn). Lad feltet være tomt for at beholde den.'
+  es: 'Ya hay un secreto de API guardado (oculto por seguridad). Deje este campo vacío para conservarlo.'
+
+'Your ViaBill API secret.':
+  dk: 'Din ViaBill API-secret.'
+  es: 'Su secreto de API de ViaBill.'
+
+'Paste the whole PriceTag script snippet provided by ViaBill, including the opening and closing script tags.':
+  dk: 'Indsæt hele det Pricetag-script, som ViaBill har givet dig, inklusive de indledende og afsluttende script-tags.'
+  es: 'Pegue el fragmento completo del script de la etiqueta de precio proporcionado por ViaBill, incluidas las etiquetas script de apertura y cierre.'
+
+'ViaBill''s PriceTag is the key to your success as a ViaBill partner.':
+  dk: 'ViaBills Pricetag er nøglen til din succes som ViaBill-partner.'
+  es: 'La etiqueta de precio de ViaBill es la clave de su éxito como socio de ViaBill.'
+
+'The PriceTag immediately shows your customers how much they have to pay per month if they choose to pay with ViaBill. This way you maintain the customers'' interest and avoid losing customers who would otherwise have abandoned the purchase.':
+  dk: 'Pricetagget viser straks dine kunder, hvor meget de skal betale om måneden, hvis de vælger at betale med ViaBill. På den måde fastholder du kundernes interesse og undgår at miste kunder, der ellers ville have opgivet købet.'
+  es: 'La etiqueta de precio muestra inmediatamente a sus clientes cuánto tienen que pagar al mes si eligen pagar con ViaBill. Así mantiene el interés de los clientes y evita perder clientes que, de otro modo, habrían abandonado la compra.'
+
+'PriceTag :pricetag may be already inserted in file :filepath':
+  dk: 'Pricetag :pricetag er muligvis allerede indsat i filen :filepath'
+  es: 'Es posible que la etiqueta de precio :pricetag ya esté insertada en el archivo :filepath'
+
+'PriceTag :pricetag can be inserted into the file :filepath around :line, after the following HTML code:<br/><pre>:insert_after</pre>':
+  dk: 'Pricetag :pricetag kan indsættes i filen :filepath omkring linje :line, efter følgende HTML-kode:<br/><pre>:insert_after</pre>'
+  es: 'La etiqueta de precio :pricetag se puede insertar en el archivo :filepath alrededor de la línea :line, después del siguiente código HTML:<br/><pre>:insert_after</pre>'
+
+'The ViaBill API key is required.':
+  dk: 'ViaBill API-nøglen er påkrævet.'
+  es: 'La clave de API de ViaBill es obligatoria.'
+
+'The ViaBill API secret is required.':
+  dk: 'ViaBill API-secret er påkrævet.'
+  es: 'El secreto de API de ViaBill es obligatorio.'
+
+'The ViaBill PriceTag script is required.':
+  dk: 'ViaBill Pricetag-scriptet er påkrævet.'
+  es: 'El script de la etiqueta de precio de ViaBill es obligatorio.'
+
+'The PriceTag script does not look like a valid script snippet. Please paste the whole snippet, including the opening and closing script tags.':
+  dk: 'Pricetag-scriptet ligner ikke et gyldigt script. Indsæt venligst hele kodestykket, inklusive de indledende og afsluttende script-tags.'
+  es: 'El script de la etiqueta de precio no parece un fragmento de script válido. Pegue el fragmento completo, incluidas las etiquetas script de apertura y cierre.'
+
+'Capture':
+  dk: 'Indløs'
+  es: 'Capturar'
+
+'Capture payment':
+  dk: 'Indløs betaling'
+  es: 'Capturar pago'
+
+'Authorized: @authorized<br/>Already captured: @captured<br/>Remaining: @remaining':
+  dk: 'Autoriseret: @authorized<br/>Allerede indløst: @captured<br/>Resterende: @remaining'
+  es: 'Autorizado: @authorized<br/>Ya capturado: @captured<br/>Restante: @remaining'
+
+'<p>Enter your ViaBill API key, API secret and PriceTag script below. You can find these values in your ViaBill merchant account. Once saved, they are applied to the ViaBill payment gateway.</p>':
+  dk: '<p>Indtast din ViaBill API-nøgle, API-secret og dit Pricetag-script nedenfor. Du finder disse værdier i din ViaBill-forhandlerkonto. Når de er gemt, anvendes de på ViaBill-betalingsløsningen.</p>'
+  es: '<p>Introduzca a continuación su clave de API, su secreto de API y el script de la etiqueta de precio de ViaBill. Encontrará estos valores en su cuenta de comerciante de ViaBill. Una vez guardados, se aplican a la pasarela de pago de ViaBill.</p>'
+
+'Save Credentials':
+  dk: 'Gem kontooplysninger'
+  es: 'Guardar credenciales'
+
+'ViaBill account credentials saved successfully.':
+  dk: 'ViaBill-kontooplysningerne er gemt.'
+  es: 'Las credenciales de la cuenta ViaBill se han guardado correctamente.'

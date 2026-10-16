@@ -2,8 +2,10 @@
 
 namespace Drupal\viabill_payments\Helper;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\GuzzleException;
 
 /**
  * Provides static methods to send requests to the ViaBill API.
@@ -66,13 +68,13 @@ class ViaBillOutgoingRequests {
         $response = $client->request('GET', $requestUrl, [
           'headers' => $headers,
           'query'   => $data,
-        ]);
+        ] + self::transportOptions());
       }
       elseif (strtoupper($method) === 'POST') {
         $response = $client->request('POST', $requestUrl, [
           'headers'     => $headers,
           'form_params' => $data,
-        ]);
+        ] + self::transportOptions());
       }
       else {
         // Unsupported method from your original code viewpoint.
@@ -87,6 +89,11 @@ class ViaBillOutgoingRequests {
     }
     catch (RequestException $e) {
       $helper->log('RequestException: ' . $e->getMessage(), 'error');
+      return FALSE;
+    }
+    catch (GuzzleException $e) {
+      // E.g. connection failures and timeouts (ConnectException).
+      $helper->log('Request failed: ' . $e->getMessage(), 'error');
       return FALSE;
     }
 
@@ -152,14 +159,20 @@ class ViaBillOutgoingRequests {
         'allow_redirects' => FALSE,
         'headers'         => $headers,
         'form_params'     => $data,
-      ]);
+      ] + self::transportOptions());
     }
-    catch (ClientException $e) {
-      $helper->log('ClientException: ' . $e->getMessage(), 'error');
-      return FALSE;
+    catch (BadResponseException $e) {
+      // 4XX/5XX: keep ViaBill's full response, Guzzle's message truncates it.
+      $response = $e->getResponse();
+      $helper->log('Checkout request rejected with HTTP ' . $response->getStatusCode() . ': ' . (string) $response->getBody(), 'error');
     }
     catch (RequestException $e) {
       $helper->log('RequestException: ' . $e->getMessage(), 'error');
+      return FALSE;
+    }
+    catch (GuzzleException $e) {
+      // E.g. connection failures and timeouts (ConnectException).
+      $helper->log('Request failed: ' . $e->getMessage(), 'error');
       return FALSE;
     }
 
@@ -184,6 +197,23 @@ class ViaBillOutgoingRequests {
     }
 
     return $output;
+  }
+
+  /**
+   * Transport options for every ViaBill API request.
+   *
+   * The ViaBill API is called during checkout, so a request must never hang,
+   * and the TLS certificate is always verified.
+   *
+   * @return array
+   *   Guzzle request options.
+   */
+  protected static function transportOptions(): array {
+    return [
+      'connect_timeout' => 10,
+      'timeout' => 30,
+      'verify' => TRUE,
+    ];
   }
 
   /**

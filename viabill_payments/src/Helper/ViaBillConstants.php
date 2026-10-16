@@ -9,6 +9,13 @@ final class ViaBillConstants {
 
   // Should be drupal.
   public const AFFILIATE = 'drupal';
+
+  // State API key of the API secret stored outside the payment gateway
+  // (State is not part of configuration exports).
+  public const STATE_API_SECRET = 'viabill_payments.api_secret';
+
+  // Host names a checkout redirect may point to.
+  public const ALLOWED_REDIRECT_HOST_SUFFIX = 'viabill.com';
   public const TRANSACTION_TYPE_AUTHORIZE_ONLY = 'authorize_only';
   public const TRANSACTION_TYPE_AUTHORIZE_CAPTURE = 'authorize_capture';
   public const TEST_MODE_ON = 'true';

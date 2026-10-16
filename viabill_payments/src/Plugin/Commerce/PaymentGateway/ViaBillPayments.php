@@ -24,6 +24,7 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\commerce_price\MinorUnitsConverterInterface;
 use Drupal\commerce_price\Price;
 use Drupal\Core\Url;
+use Drupal\Component\Utility\Xss;
 
 /**
  * The main class for the payment module.
@@ -77,6 +78,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       'api_secret' => '',
       'viabill_pricetag' => '',
       'transaction_type' => ViaBillConstants::TRANSACTION_TYPE_AUTHORIZE_ONLY,
+      'order_number_prefix' => '',
     ] + parent::defaultConfiguration();
   }
 
@@ -100,7 +102,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     // standalone ViaBill Account Credentials form).
     $storedConfig = $this->configFactory->get('viabill_payments.settings');
     $apiKey = $this->configuration['api_key'] ?: ($storedConfig->get('api_key') ?? '');
-    $apiSecret = $this->configuration['api_secret'] ?: ($storedConfig->get('api_secret') ?? '');
+    $apiSecret = $this->configuration['api_secret'] ?: ViaBillHelper::getStoredSecret();
     $priceTagScript = $this->configuration['viabill_pricetag'] ?: ($storedConfig->get('viabill_pricetag') ?? '');
 
     if (empty($apiKey) || empty($apiSecret)) {
@@ -142,18 +144,18 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
           elseif (is_array($messages)) {
             if (count($messages) == 1) {
               $form['notifications'] = [
-                '#markup' => Markup::create('<div style="background-color: #fff3cd;border: 1px solid #ffeeba;padding: 15px;border-radius: 4px;margin: 10px 0;color: #856404;">' . $messages[0] . '</div>'),
+                '#markup' => Markup::create('<div style="background-color: #fff3cd;border: 1px solid #ffeeba;padding: 15px;border-radius: 4px;margin: 10px 0;color: #856404;">' . Xss::filter((string) $messages[0]) . '</div>'),
               ];
             }
             else {
               $form['notifications'] = [
-                '#markup' => Markup::create('<div style="background-color: #fff3cd;border: 1px solid #ffeeba;padding: 15px;border-radius: 4px;margin: 10px 0;color: #856404;"><ul><li>' . implode('</li><li>', $messages) . '</li></ul></div>'),
+                '#markup' => Markup::create('<div style="background-color: #fff3cd;border: 1px solid #ffeeba;padding: 15px;border-radius: 4px;margin: 10px 0;color: #856404;"><ul><li>' . implode('</li><li>', array_map(function ($message) { return Xss::filter((string) $message); }, $messages)) . '</li></ul></div>'),
               ];
             }
           }
           elseif (is_string($messages)) {
             $form['notifications'] = [
-              '#markup' => Markup::create('<div style="background-color: #fff3cd;border: 1px solid #ffeeba;padding: 15px;border-radius: 4px;margin: 10px 0;color: #856404;">' . $messages . '</div>'),
+              '#markup' => Markup::create('<div style="background-color: #fff3cd;border: 1px solid #ffeeba;padding: 15px;border-radius: 4px;margin: 10px 0;color: #856404;">' . Xss::filter($messages) . '</div>'),
             ];
           }
         }
@@ -224,6 +226,11 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#required' => TRUE,
     ];
 
+    // Point merchants without credentials to the ViaBill online signup form.
+    if (empty($apiKey) || empty($apiSecret) || empty($priceTagScript)) {
+      $form['credentials']['signup_note'] = ViaBillHelper::buildSignupNote();
+    }
+
     // Group 1: Payment Preferences.
     $form['payment_preferences'] = [
       '#type' => 'fieldset',
@@ -239,6 +246,15 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
         ViaBillConstants::TRANSACTION_TYPE_AUTHORIZE_CAPTURE => $this->t('Authorize and Capture'),
       ],
       '#default_value' => $this->configuration['transaction_type'],
+    ];
+
+    $form['payment_preferences']['order_number_prefix'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Order number prefix'),
+      '#description' => $this->t('Optional. Added in front of the order number sent to ViaBill, e.g. "SHOP-" sends order 1000 as "SHOP-1000". Use it when several shops share one ViaBill account, or change it after resetting the orders of the shop, so ViaBill never receives an order number it has already seen.'),
+      '#default_value' => $this->configuration['order_number_prefix'] ?? '',
+      '#maxlength' => 20,
+      '#size' => 20,
     ];
 
     // Group 2: App Credentials — moved to the "ViaBill Account Credentials"
@@ -661,10 +677,14 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     // An empty secret is only allowed when a secret is already stored
     // (it means "keep the current one").
     if ($api_secret === '') {
-      $storedConfig = $this->configFactory->get('viabill_payments.settings');
-      $stored_secret = $this->configuration['api_secret'] ?: ($storedConfig->get('api_secret') ?? '');
+      $stored_secret = ($this->configuration['api_secret'] ?? '') ?: ViaBillHelper::getStoredSecret();
       if (empty($stored_secret)) {
         $form_state->setError($form['credentials']['api_secret'], $this->t('The ViaBill API secret is required.'));
+      }
+      else {
+        // The submit handler may run on a plugin instance without the
+        // stored secret, so hand over the one found here.
+        $form_state->set('viabill_existing_api_secret', $stored_secret);
       }
     }
 
@@ -689,8 +709,7 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
 
     // An empty secret means "keep the currently stored secret".
     if ($api_secret === '') {
-      $storedConfig = $this->configFactory->get('viabill_payments.settings');
-      $api_secret = $this->configuration['api_secret'] ?: ($storedConfig->get('api_secret') ?? '');
+      $api_secret = ($this->configuration['api_secret'] ?? '') ?: (string) $form_state->get('viabill_existing_api_secret') ?: ViaBillHelper::getStoredSecret();
     }
 
     $this->configuration['api_key'] = $api_key;
@@ -709,14 +728,19 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $this->configuration['checkout_pricetag_auto'] = $values['pricetags']['checkout_pricetag_auto'];
     $this->configuration['viabill_pricetag_custom_css'] = $values['pricetags']['viabill_pricetag_custom_css'];
     $this->configuration['transaction_type'] = $values['payment_preferences']['transaction_type'];
+    $this->configuration['order_number_prefix'] = trim($values['payment_preferences']['order_number_prefix'] ?? '');
 
-    // Global config (accessible from hooks and elsewhere). The credentials
-    // are stored here as well because the pricetag hooks in
+    // The module's own copy of the API secret lives in the State API, so it
+    // is never part of a configuration export.
+    ViaBillHelper::setStoredSecret($api_secret);
+
+    // Global config (accessible from hooks and elsewhere). The API key and
+    // PriceTag script are stored here as well because the pricetag hooks in
     // viabill_payments.module read the PriceTag script from this config.
     $global_config = \Drupal::service('config.factory')->getEditable('viabill_payments.settings');
     $global_config
       ->set('api_key', $api_key)
-      ->set('api_secret', $api_secret)
+      ->clear('api_secret')
       ->set('viabill_pricetag', $pricetag)
       ->set('product_pricetag_alignment', $values['pricetags']['product_pricetag_alignment'])
       ->set('product_pricetag_width', $values['pricetags']['product_pricetag_width'])
@@ -808,6 +832,8 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     // Call ViaBill API to process the capture.
     $helper = new ViaBillHelper();
     $gateway = new ViaBillGateway();
+    // Use this gateway's own credentials.
+    $gateway->setCredentials((string) $this->configuration['api_key'], (string) ($this->configuration['api_secret'] ?: ViaBillHelper::getStoredSecret()));
 
     $transaction_id = $payment->getRemoteId();
     $api_key = $this->configuration['api_key'];
@@ -878,6 +904,8 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     // Call ViaBill API to process the void.
     $helper = new ViaBillHelper();
     $gateway = new ViaBillGateway();
+    // Use this gateway's own credentials.
+    $gateway->setCredentials((string) $this->configuration['api_key'], (string) ($this->configuration['api_secret'] ?: ViaBillHelper::getStoredSecret()));
 
     $transaction_id = $payment->getRemoteId();
     $api_key = $this->configuration['api_key'];
@@ -915,6 +943,8 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     // Call ViaBill API to process the refund.
     $helper = new ViaBillHelper();
     $gateway = new ViaBillGateway();
+    // Use this gateway's own credentials.
+    $gateway->setCredentials((string) $this->configuration['api_key'], (string) ($this->configuration['api_secret'] ?: ViaBillHelper::getStoredSecret()));
 
     // Use the amount or default to the entire payment amount.
     $amount = $amount ?: $payment->getAmount();

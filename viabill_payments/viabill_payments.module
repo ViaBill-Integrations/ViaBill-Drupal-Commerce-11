@@ -8,6 +8,7 @@
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Template\Attribute;
 use Drupal\viabill_payments\Helper\ViaBillConstants;
 
 /**
@@ -27,106 +28,40 @@ function viabill_payments_entity_view(array &$build, EntityInterface $entity, En
       /** @var \Drupal\commerce_product\Entity\ProductVariation $variation */
       $variation = $entity;
       $price = $variation->getPrice();
-      if ($price) {
-        $amount = $price->getNumber();
-        if ($amount) {
-          $amount = number_format($amount, 2);
-          // E.g. "99.99".
-        }
-        $currency = $price->getCurrencyCode();
-        // E.g. "DKK", "EUR".
-      }
-      else {
-        return;
+      if (!$price) {
         // No price found, do nothing.
+        return;
       }
 
       $config = \Drupal::config('viabill_payments.settings');
       $viabill_pricetag_script = $config->get('viabill_pricetag') ?? '';
-      $viabill_pricetag_custom_css = $config->get('viabill_pricetag_custom_css') ?? '';
-      $pricetag_country = $config->get('pricetag_country') ?? '';
-      $pricetag_language = $config->get('pricetag_language') ?? '';
-      $pricetag_alignment = $config->get('product_pricetag_alignment') ?? '';
-      $pricetag_width = $config->get('product_pricetag_width') ?? '';
-      $product_pricetag_auto = $config->get('product_pricetag_auto') ?? '';
-      $dynamic_price_selector = $config->get('product_pricetag_dynamic_price') ?? '';
-      $dynamic_price_trigger = $config->get('product_pricetag_price_trigger') ?? '';
       // If there's no stored pricetag, do nothing.
       if (empty($viabill_pricetag_script)) {
         return;
       }
 
-      $alignment_wrapper_class = '';
-      $alignment_div_class = '';
-      switch ($pricetag_alignment) {
-        case 'center':
-        case 'right':
-          $alignment_wrapper_class = 'viabill_wrapper_alignment_' . $pricetag_alignment;
-          $alignment_div_class = 'viabill_alignment_' . $pricetag_alignment;
-
-          break;
-
-        default:
-          // Do nothing.
+      $pricetag_width = $config->get('product_pricetag_width') ?? '';
+      $attributes = _viabill_payments_pricetag_attributes(
+        'product',
+        $price->getNumber(),
+        $price->getCurrencyCode(),
+        $config->get('product_pricetag_dynamic_price') ?? '',
+        $config->get('product_pricetag_price_trigger') ?? ''
+      );
+      if ($width = _viabill_payments_css_length($pricetag_width)) {
+        $attributes->setAttribute('style', 'width: ' . $width);
       }
 
-      // Build the new render element for the pricetag <div>.
-      $data_attributes = ' data-view="product" ';
-      if (!empty($dynamic_price_selector)) {
-        $data_attributes .= ' data-dynamic-price="' . $dynamic_price_selector . '" ';
-        if (!empty($dynamic_price_trigger)) {
-          $data_attributes .= ' data-dynamic-price-triggers="' . $dynamic_price_trigger . '" ';
-        }
-      }
-      else {
-        $data_attributes .= ' data-price="' . strip_tags($amount) . '" ';
-      }
-      if (!empty($pricetag_country)) {
-        if ($pricetag_country != ViaBillConstants::PRICETAG_COUNTRY_AUTODETECT) {
-          $data_attributes .= ' data-country-code="' . $pricetag_country . '" ';
-        }
-      }
-      if (!empty($pricetag_language)) {
-        if ($pricetag_language != ViaBillConstants::PRICETAG_LANGUAGE_AUTODETECT) {
-          $data_attributes .= ' data-language="' . $pricetag_language . '" ';
-        }
-        else {
-          // Get the current language (e.g. "en", "da", "el", etc.)
-          $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE);
-          $langcode = $language->getId();
-          // e.g. "en".
-          if (!empty($langcode)) {
-            $data_attributes .= ' data-language="' . $langcode . '" ';
-          }
-        }
-      }
-      $data_attributes .= ' data-currency="' . $currency . '" ';
-      if (!empty($pricetag_width)) {
-        $data_attributes .= ' style="width: ' . trim($pricetag_width) . '" ';
-      }
-
-      // Attach inline custom CSS if available.
-      if (!empty($viabill_pricetag_custom_css)) {
-        $build['content']['viabill_custom_style'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'style',
-          '#value' => $viabill_pricetag_custom_css,
-          '#attributes' => ['type' => 'text/css'],
-          '#weight' => 5,
-        ];
-      }
-
-      if ($product_pricetag_auto == ViaBillConstants::YES) {
-        $build['content']['viabill_pricetag'] = [
-          '#type' => 'markup',
-          '#markup' => '<div class="viabill-pricetag-product-wrapper ' .
-          $alignment_wrapper_class . '"><div class="viabill-pricetag" ' .
-          $data_attributes . '></div>' .
-          $viabill_pricetag_script .
-          '</div>',
-          '#allowed_tags' => ['div', 'script', 'iframe'],
-          '#weight' => 20,
-        ];
+      if (($config->get('product_pricetag_auto') ?? '') == ViaBillConstants::YES) {
+        $build['content']['viabill_pricetag'] = _viabill_payments_pricetag_element(
+          'product',
+          $config->get('product_pricetag_alignment') ?? '',
+          $attributes,
+          $viabill_pricetag_script,
+          _viabill_payments_custom_css($config->get('viabill_pricetag_custom_css') ?? ''),
+          TRUE
+        );
+        $build['content']['viabill_pricetag']['#weight'] = 20;
       }
 
       $build['#attached']['library'][] = 'viabill_payments/styles';
@@ -151,90 +86,38 @@ function viabill_payments_preprocess_commerce_product(&$variables) {
     return;
   }
 
-  $amount = $price->getNumber();
-  if ($amount) {
-    $amount = number_format($amount, 2);
-  }
-  $currency = $price->getCurrencyCode();
   // Get the ViaBill script.
   $config = \Drupal::config('viabill_payments.settings');
   $viabill_pricetag_script = $config->get('viabill_pricetag') ?? '';
-  $viabill_pricetag_custom_css = $config->get('viabill_pricetag_custom_css') ?? '';
-  $pricetag_country = $config->get('pricetag_country') ?? '';
-  $pricetag_language = $config->get('pricetag_language') ?? '';
-  $pricetag_alignment = $config->get('product_pricetag_alignment') ?? '';
-  $pricetag_width = $config->get('product_pricetag_width') ?? '';
-  $dynamic_price_selector = $config->get('product_pricetag_dynamic_price') ?? '';
-  $dynamic_price_trigger = $config->get('product_pricetag_price_trigger') ?? '';
   if (empty($viabill_pricetag_script)) {
     return;
   }
 
-  // Build the new render element for the pricetag <div>.
-  $data_attributes = ' data-view="product" ';
-  if (!empty($dynamic_price_selector)) {
-    $data_attributes .= ' data-dynamic-price="' . $dynamic_price_selector . '" ';
-    if (!empty($dynamic_price_trigger)) {
-      $data_attributes .= ' data-dynamic-price-triggers="' . $dynamic_price_trigger . '" ';
-    }
-  }
-  else {
-    $data_attributes .= ' data-price="' . strip_tags($amount) . '" ';
-  }
-  if (!empty($pricetag_country)) {
-    if ($pricetag_country != ViaBillConstants::PRICETAG_COUNTRY_AUTODETECT) {
-      $data_attributes .= ' data-country-code="' . $pricetag_country . '" ';
-    }
-  }
-  if (!empty($pricetag_language)) {
-    if ($pricetag_language != ViaBillConstants::PRICETAG_LANGUAGE_AUTODETECT) {
-      $data_attributes .= ' data-language="' . $pricetag_language . '" ';
-    }
-    else {
-      // Get the current language (e.g. "en", "da", "el", etc.)
-      $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE);
-      $langcode = $language->getId();
-      // e.g. "en".
-      if (!empty($langcode)) {
-        $data_attributes .= ' data-language="' . $langcode . '" ';
-      }
-    }
-  }
-  $data_attributes .= ' data-currency="{{ currency }}" ';
   $route_name = \Drupal::routeMatch()->getRouteName();
   if (($route_name != 'commerce_cart.page')&&($route_name != 'commerce_checkout.form')) {
-    // Attach inline custom CSS if available.
-    if (!empty($pricetag_width)) {
-      if (!empty($viabill_pricetag_custom_css)) {
-        $viabill_pricetag_custom_css .= "\n" . 'div.viabill-pricetag-cart-wrapper div.viabill-pricetag { width: ' . trim($pricetag_width) . ' !important;" ';
-      }
-      else {
-        $viabill_pricetag_custom_css .= 'div.viabill-pricetag-cart-wrapper div.viabill-pricetag { width: ' . trim($pricetag_width) . ' !important;" ';
-      }
-    }
+    $attributes = _viabill_payments_pricetag_attributes(
+      'product',
+      $price->getNumber(),
+      $price->getCurrencyCode(),
+      $config->get('product_pricetag_dynamic_price') ?? '',
+      $config->get('product_pricetag_price_trigger') ?? ''
+    );
 
-    $inline_style = '';
-    if (!empty($viabill_pricetag_custom_css)) {
-      $variables['viabill_custom_style'] = [
-        '#type' => 'html_tag',
-        '#tag' => 'style',
-        '#value' => $viabill_pricetag_custom_css,
-        '#attributes' => ['type' => 'text/css'],
-      // Make sure it's rendered early.
-        '#weight' => -10,
-      ];
-      $inline_style = '<style type="text/css">' . $viabill_pricetag_custom_css . '</style>';
-    }
+    $css = _viabill_payments_custom_css(
+      $config->get('viabill_pricetag_custom_css') ?? '',
+      'div.viabill-pricetag-product-wrapper div.viabill-pricetag',
+      $config->get('product_pricetag_width') ?? ''
+    );
 
-    $variables['viabill_pricetag'] = [
-      '#type' => 'inline_template',
-      '#template' => '<div class="viabill-pricetag-product-wrapper"><div class="viabill-pricetag" ' .
-      $data_attributes . '></div></div>{{ script|raw }}' .
-      $inline_style,
-      '#context' => ['script' => $viabill_pricetag_script],
-    ];
+    $variables['viabill_pricetag'] = _viabill_payments_pricetag_element(
+      'product',
+      // The product preprocess output has never used the alignment classes.
+      '',
+      $attributes,
+      $viabill_pricetag_script,
+      $css
+    );
     $variables['#attached']['library'][] = 'viabill_payments/styles';
-
   }
 }
 
@@ -258,97 +141,33 @@ function viabill_payments_form_views_form_commerce_cart_form_default_alter(&$for
     return;
   }
 
-  $amount = $total_price->getNumber();
-  if ($amount) {
-    $amount = number_format($amount, 2);
-    // E.g. "99.99".
-  }
-  $currency = $total_price->getCurrencyCode();
-  // E.g. "DKK", "EUR".
   // Get the ViaBill script.
   $config = \Drupal::config('viabill_payments.settings');
   $viabill_pricetag_script = $config->get('viabill_pricetag') ?? '';
-  $viabill_pricetag_custom_css = $config->get('viabill_pricetag_custom_css') ?? '';
-  $pricetag_country = $config->get('pricetag_country') ?? '';
-  $pricetag_language = $config->get('pricetag_language') ?? '';
-  $cart_alignment = $config->get('cart_pricetag_alignment') ?? '';
-  $cart_width = $config->get('cart_pricetag_width') ?? '';
-  $cart_pricetag_auto = $config->get('cart_pricetag_auto') ?? '';
   // If there's no stored pricetag, do nothing.
   if (empty($viabill_pricetag_script)) {
     return;
   }
 
-  $alignment_wrapper_class = '';
-  $alignment_div_class = '';
-  switch ($cart_alignment) {
-    case 'center':
-    case 'right':
-      $alignment_wrapper_class = 'viabill_wrapper_alignment_' . $cart_alignment;
-      $alignment_div_class = 'viabill_alignment_' . $cart_alignment;
+  $attributes = _viabill_payments_pricetag_attributes('basket', $total_price->getNumber(), $total_price->getCurrencyCode());
 
-      break;
+  $css = _viabill_payments_custom_css(
+    $config->get('viabill_pricetag_custom_css') ?? '',
+    'div.viabill-pricetag-cart-wrapper div.viabill-pricetag',
+    $config->get('cart_pricetag_width') ?? ''
+  );
 
-    default:
-      // Do nothing.
-  }
-
-  // Build the new render element for the pricetag <div>.
-  $data_attributes = ' data-view="basket" ';
-  $data_attributes .= ' data-price="' . strip_tags($amount) . '" ';
-  if (!empty($pricetag_country)) {
-    if ($pricetag_country != ViaBillConstants::PRICETAG_COUNTRY_AUTODETECT) {
-      $data_attributes .= ' data-country-code="' . $pricetag_country . '" ';
-    }
-  }
-  if (!empty($pricetag_language)) {
-    if ($pricetag_language != ViaBillConstants::PRICETAG_LANGUAGE_AUTODETECT) {
-      $data_attributes .= ' data-language="' . $pricetag_language . '" ';
-    }
-    else {
-      // Get the current language (e.g. "en", "da", "el", etc.)
-      $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE);
-      $langcode = $language->getId();
-      // e.g. "en".
-      if (!empty($langcode)) {
-        $data_attributes .= ' data-language="' . $langcode . '" ';
-      }
-    }
-  }
-  $data_attributes .= ' data-currency="' . $currency . '" ';
-  // Attach inline custom CSS if available.
-  if (!empty($cart_width)) {
-    if (!empty($viabill_pricetag_custom_css)) {
-      $viabill_pricetag_custom_css .= "\n" . 'div.viabill-pricetag-cart-wrapper div.viabill-pricetag { width: ' . trim($cart_width) . ' !important;" ';
-    }
-    else {
-      $viabill_pricetag_custom_css .= 'div.viabill-pricetag-cart-wrapper div.viabill-pricetag { width: ' . trim($cart_width) . ' !important;" ';
-    }
-  }
-
-  if (!empty($viabill_pricetag_custom_css)) {
-    $form['viabill_custom_style'] = [
-      '#type' => 'html_tag',
-      '#tag' => 'style',
-      '#value' => $viabill_pricetag_custom_css,
-      '#attributes' => ['type' => 'text/css'],
-    // Make sure it's rendered early.
-      '#weight' => -10,
-    ];
-  }
-
-  // Add the pricetag to the top of the cart form.
-  if ($cart_pricetag_auto == ViaBillConstants::YES) {
-    $form['viabill_pricetag'] = [
-      '#type' => 'markup',
-      '#markup' => '<div class="viabill-pricetag-cart-wrapper ' .
-      $alignment_wrapper_class . '"><div class="viabill-pricetag" ' .
-      $data_attributes . '></div>' .
-      $viabill_pricetag_script . '</div>',
-      '#allowed_tags' => ['div', 'script', 'iframe'],
-    // Show at the top of the form.
-      '#weight' => 50,
-    ];
+  // Add the pricetag to the cart form.
+  if (($config->get('cart_pricetag_auto') ?? '') == ViaBillConstants::YES) {
+    $form['viabill_pricetag'] = _viabill_payments_pricetag_element(
+      'cart',
+      $config->get('cart_pricetag_alignment') ?? '',
+      $attributes,
+      $viabill_pricetag_script,
+      $css,
+      TRUE
+    );
+    $form['viabill_pricetag']['#weight'] = 50;
   }
 
   $form['#attached']['library'][] = 'viabill_payments/styles';
@@ -367,176 +186,51 @@ function viabill_payments_preprocess_commerce_order_total_summary(&$variables) {
   $cart_provider = \Drupal::service('commerce_cart.cart_provider');
   // Get the current cart for the default order type.
   $cart = $cart_provider->getCart('default', $store);
-  if (!empty($cart)) {
-    // Now you have access to the order/cart.
-    $total_price = $cart->getTotalPrice();
-    if (!$total_price) {
-      return;
-    }
-
-    $amount = $total_price->getNumber();
-    if ($amount) {
-      $amount = number_format($amount, 2);
-    }
-    $currency = $total_price->getCurrencyCode();
-    // Get the ViaBill script.
-    $config = \Drupal::config('viabill_payments.settings');
-    $viabill_pricetag_script = $config->get('viabill_pricetag') ?? '';
-    $viabill_pricetag_custom_css = $config->get('viabill_pricetag_custom_css') ?? '';
-    $pricetag_country = $config->get('pricetag_country') ?? '';
-    $pricetag_language = $config->get('pricetag_language') ?? '';
-    $cart_alignment = $config->get('cart_pricetag_alignment') ?? '';
-    $cart_width = $config->get('cart_pricetag_width') ?? '';
-    $cart_pricetag_auto = $config->get('cart_pricetag_auto') ?? '';
-    $checkout_alignment = $config->get('checkout_pricetag_alignment') ?? '';
-    $checkout_width = $config->get('checkout_pricetag_width') ?? '';
-    $checkout_pricetag_auto = $config->get('checkout_pricetag_auto') ?? '';
-    if (empty($viabill_pricetag_script)) {
-      return;
-    }
-
-    $route_name = \Drupal::routeMatch()->getRouteName();
-    if ($route_name == 'commerce_cart.page') {
-      $alignment_wrapper_class = '';
-      $alignment_div_class = '';
-      switch ($cart_alignment) {
-        case 'center':
-        case 'right':
-          $alignment_wrapper_class = 'viabill_wrapper_alignment_' . $cart_alignment;
-          $alignment_div_class = 'viabill_alignment_' . $cart_alignment;
-
-          break;
-
-        default:
-          // Do nothing.
-      }
-
-      // Build the new render element for the pricetag <div>.
-      $data_attributes = ' data-view="basket" ';
-      $data_attributes .= ' data-price="' . strip_tags($amount) . '" ';
-      if (!empty($pricetag_country)) {
-        if ($pricetag_country != ViaBillConstants::PRICETAG_COUNTRY_AUTODETECT) {
-          $data_attributes .= ' data-country-code="' . $pricetag_country . '" ';
-        }
-      }
-      if (!empty($pricetag_language)) {
-        if ($pricetag_language != ViaBillConstants::PRICETAG_LANGUAGE_AUTODETECT) {
-          $data_attributes .= ' data-language="' . $pricetag_language . '" ';
-        }
-        else {
-          // Get the current language (e.g. "en", "da", "el", etc.)
-          $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE);
-          $langcode = $language->getId();
-          // e.g. "en".
-          if (!empty($langcode)) {
-            $data_attributes .= ' data-language="' . $langcode . '" ';
-          }
-        }
-      }
-      $data_attributes .= ' data-currency="' . $currency . '" ';
-      // Attach inline custom CSS if available.
-      if (!empty($cart_width)) {
-        if (!empty($viabill_pricetag_custom_css)) {
-          $viabill_pricetag_custom_css .= "\n" . 'div.viabill-pricetag-cart-wrapper div.viabill-pricetag { width: ' . trim($cart_width) . ' !important;" ';
-        }
-        else {
-          $viabill_pricetag_custom_css .= 'div.viabill-pricetag-cart-wrapper div.viabill-pricetag { width: ' . trim($cart_width) . ' !important;" ';
-        }
-      }
-
-      $inline_style = '';
-      if (!empty($viabill_pricetag_custom_css)) {
-        $variables['viabill_custom_style'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'style',
-          '#value' => $viabill_pricetag_custom_css,
-          '#attributes' => ['type' => 'text/css'],
-        // Make sure it's rendered early.
-          '#weight' => -10,
-        ];
-        $inline_style = '<style type="text/css">' . $viabill_pricetag_custom_css . '</style>';
-      }
-
-      $variables['viabill_pricetag'] = [
-        '#type' => 'inline_template',
-        '#template' => '<div class="viabill-pricetag-cart-wrapper ' .
-        $alignment_wrapper_class . '"><div class="viabill-pricetag" ' .
-        $data_attributes . '></div></div>{{ script|raw }}' .
-        $inline_style,
-        '#context' => ['script' => $viabill_pricetag_script],
-      ];
-      $variables['#attached']['library'][] = 'viabill_payments/styles';
-    }
-    elseif ($route_name == 'commerce_checkout.form') {
-      $alignment_wrapper_class = '';
-      $alignment_div_class = '';
-      switch ($checkout_alignment) {
-        case 'center':
-        case 'right':
-          $alignment_wrapper_class = 'viabill_wrapper_alignment_' . $checkout_alignment;
-          $alignment_div_class = 'viabill_alignment_' . $checkout_alignment;
-          break;
-
-        default:
-          // Do nothing.
-      }
-
-      // Build the new render element for the pricetag <div>.
-      $data_attributes = ' data-view="payment" ';
-      $data_attributes .= ' data-price="' . strip_tags($amount) . '" ';
-      if (!empty($pricetag_country)) {
-        if ($pricetag_country != ViaBillConstants::PRICETAG_COUNTRY_AUTODETECT) {
-          $data_attributes .= ' data-country-code="' . $pricetag_country . '" ';
-        }
-      }
-      if (!empty($pricetag_language)) {
-        if ($pricetag_language != ViaBillConstants::PRICETAG_LANGUAGE_AUTODETECT) {
-          $data_attributes .= ' data-language="' . $pricetag_language . '" ';
-        }
-        else {
-          // Get the current language (e.g. "en", "da", "el", etc.)
-          $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE);
-          $langcode = $language->getId();
-          // e.g. "en".
-          if (!empty($langcode)) {
-            $data_attributes .= ' data-language="' . $langcode . '" ';
-          }
-        }
-      }
-      $data_attributes .= ' data-currency="' . $currency . '" ';
-      // Attach inline custom CSS if available.
-      if (!empty($checkout_width)) {
-        if (!empty($viabill_pricetag_custom_css)) {
-          $viabill_pricetag_custom_css .= "\n" . 'div.viabill-pricetag-checkout-wrapper div.viabill-pricetag { width: ' . trim($checkout_width) . ' !important;" ';
-        }
-        else {
-          $viabill_pricetag_custom_css .= 'div.viabill-pricetag-checkout-wrapper div.viabill-pricetag { width: ' . trim($checkout_width) . ' !important;" ';
-        }
-      }
-
-      $inline_style = '';
-      if (!empty($viabill_pricetag_custom_css)) {
-        $variables['viabill_custom_style'] = [
-          '#type' => 'html_tag',
-          '#tag' => 'style',
-          '#value' => $viabill_pricetag_custom_css,
-          '#attributes' => ['type' => 'text/css'],
-          // Make sure it's rendered early.
-          '#weight' => -10,
-        ];
-        $inline_style = '<style type="text/css">' . $viabill_pricetag_custom_css . '</style>';
-      }
-
-      $variables['viabill_pricetag'] = [
-        '#type' => 'inline_template',
-        '#template' => '<div class="viabill-pricetag-checkout-wrapper ' .
-        $alignment_wrapper_class . '"><div class="viabill-pricetag" ' .
-        $data_attributes . '></div></div>{{ script|raw }}' . $inline_style,
-        '#context' => ['script' => $viabill_pricetag_script],
-      ];
-      $variables['#attached']['library'][] = 'viabill_payments/styles';
-    }
+  if (empty($cart)) {
+    return;
   }
+
+  $total_price = $cart->getTotalPrice();
+  if (!$total_price) {
+    return;
+  }
+
+  // Get the ViaBill script.
+  $config = \Drupal::config('viabill_payments.settings');
+  $viabill_pricetag_script = $config->get('viabill_pricetag') ?? '';
+  if (empty($viabill_pricetag_script)) {
+    return;
+  }
+
+  $route_name = \Drupal::routeMatch()->getRouteName();
+  if ($route_name == 'commerce_cart.page') {
+    $page = 'cart';
+    $view = 'basket';
+  }
+  elseif ($route_name == 'commerce_checkout.form') {
+    $page = 'checkout';
+    $view = 'payment';
+  }
+  else {
+    return;
+  }
+
+  $attributes = _viabill_payments_pricetag_attributes($view, $total_price->getNumber(), $total_price->getCurrencyCode());
+
+  $css = _viabill_payments_custom_css(
+    $config->get('viabill_pricetag_custom_css') ?? '',
+    'div.viabill-pricetag-' . $page . '-wrapper div.viabill-pricetag',
+    $config->get($page . '_pricetag_width') ?? ''
+  );
+
+  $variables['viabill_pricetag'] = _viabill_payments_pricetag_element(
+    $page,
+    $config->get($page . '_pricetag_alignment') ?? '',
+    $attributes,
+    $viabill_pricetag_script,
+    $css
+  );
+  $variables['#attached']['library'][] = 'viabill_payments/styles';
 }
 
 /**
@@ -546,4 +240,157 @@ function viabill_payments_preprocess_commerce_order_total_summary(&$variables) {
  */
 function viabill_payments_preprocess_commerce_checkout_order_summary(&$variables) {
   // Placeholder for future use.
+}
+
+/**
+ * Build the attributes of the ViaBill PriceTag <div>.
+ *
+ * All values are set through an Attribute object, which escapes them when
+ * the element is rendered.
+ *
+ * @param string $view
+ *   The PriceTag view: product, basket or payment.
+ * @param string|float|null $amount
+ *   The price.
+ * @param string $currency
+ *   The currency code.
+ * @param string $dynamic_price_selector
+ *   Optional data-dynamic-price selector (product pages).
+ * @param string $dynamic_price_trigger
+ *   Optional data-dynamic-price-triggers selector (product pages).
+ *
+ * @return \Drupal\Core\Template\Attribute
+ *   The attributes.
+ */
+function _viabill_payments_pricetag_attributes($view, $amount, $currency, $dynamic_price_selector = '', $dynamic_price_trigger = '') {
+  $config = \Drupal::config('viabill_payments.settings');
+  $pricetag_country = $config->get('pricetag_country') ?? '';
+  $pricetag_language = $config->get('pricetag_language') ?? '';
+
+  $attributes = new Attribute([
+    'class' => ['viabill-pricetag'],
+    'data-view' => in_array($view, ['product', 'basket', 'payment'], TRUE) ? $view : 'product',
+  ]);
+
+  if (!empty($dynamic_price_selector)) {
+    $attributes->setAttribute('data-dynamic-price', (string) $dynamic_price_selector);
+    if (!empty($dynamic_price_trigger)) {
+      $attributes->setAttribute('data-dynamic-price-triggers', (string) $dynamic_price_trigger);
+    }
+  }
+  elseif (is_numeric($amount)) {
+    $attributes->setAttribute('data-price', number_format((float) $amount, 2));
+  }
+
+  if (!empty($pricetag_country) && $pricetag_country != ViaBillConstants::PRICETAG_COUNTRY_AUTODETECT) {
+    $attributes->setAttribute('data-country-code', (string) $pricetag_country);
+  }
+
+  if (!empty($pricetag_language)) {
+    if ($pricetag_language != ViaBillConstants::PRICETAG_LANGUAGE_AUTODETECT) {
+      $attributes->setAttribute('data-language', (string) $pricetag_language);
+    }
+    else {
+      // Get the current language (e.g. "en", "da", "el", etc.)
+      $langcode = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE)->getId();
+      if (!empty($langcode)) {
+        $attributes->setAttribute('data-language', $langcode);
+      }
+    }
+  }
+
+  if (!empty($currency)) {
+    $attributes->setAttribute('data-currency', (string) $currency);
+  }
+
+  return $attributes;
+}
+
+/**
+ * Build the render element of a ViaBill PriceTag.
+ *
+ * The template is a fixed string: every value is passed as context, so no
+ * setting can change the template itself.
+ *
+ * @param string $page
+ *   The page: product, cart or checkout (used in the wrapper class).
+ * @param string $alignment
+ *   The configured alignment (default, center or right).
+ * @param \Drupal\Core\Template\Attribute $attributes
+ *   The attributes of the PriceTag <div>.
+ * @param string $script
+ *   The PriceTag script entered by the merchant (printed as is).
+ * @param string $css
+ *   Sanitized CSS (see _viabill_payments_custom_css()).
+ * @param bool $script_inside_wrapper
+ *   Whether to print the script inside the wrapper <div>.
+ *
+ * @return array
+ *   A render array.
+ */
+function _viabill_payments_pricetag_element($page, $alignment, Attribute $attributes, $script, $css, $script_inside_wrapper = FALSE) {
+  $page = in_array($page, ['product', 'cart', 'checkout'], TRUE) ? $page : 'product';
+
+  $wrapper_classes = ['viabill-pricetag-' . $page . '-wrapper'];
+  if (in_array($alignment, [ViaBillConstants::PRICETAG_ALIGNMENT_CENTER, ViaBillConstants::PRICETAG_ALIGNMENT_RIGHT], TRUE)) {
+    $wrapper_classes[] = 'viabill_wrapper_alignment_' . $alignment;
+  }
+
+  $template = $script_inside_wrapper
+    ? '<div{{ wrapper_attributes }}><div{{ attributes }}></div>{{ script|raw }}</div>'
+    : '<div{{ wrapper_attributes }}><div{{ attributes }}></div></div>{{ script|raw }}';
+  $template .= '{% if css %}<style type="text/css">{{ css|raw }}</style>{% endif %}';
+
+  return [
+    '#type' => 'inline_template',
+    '#template' => $template,
+    '#context' => [
+      'wrapper_attributes' => new Attribute(['class' => $wrapper_classes]),
+      'attributes' => $attributes,
+      'script' => (string) $script,
+      'css' => (string) $css,
+    ],
+  ];
+}
+
+/**
+ * Validate a PriceTag width setting.
+ *
+ * @param string $width
+ *   The configured width.
+ *
+ * @return string
+ *   The width if it is a plain CSS length (e.g. "280px", "80%", "20em"),
+ *   or an empty string.
+ */
+function _viabill_payments_css_length($width) {
+  $width = trim((string) $width);
+  return preg_match('/^\d+(\.\d+)?(px|%|em|rem|vw)$/i', $width) ? $width : '';
+}
+
+/**
+ * Build the CSS printed with a PriceTag.
+ *
+ * The merchant's custom CSS may not contain "<", so it can never close the
+ * <style> element. An optional width rule is added for the given selector.
+ *
+ * @param string $custom_css
+ *   The custom CSS setting.
+ * @param string $selector
+ *   Optional selector for the width rule.
+ * @param string $width
+ *   Optional width setting.
+ *
+ * @return string
+ *   The CSS.
+ */
+function _viabill_payments_custom_css($custom_css, $selector = '', $width = '') {
+  $css = str_replace('<', '', (string) $custom_css);
+
+  $width = _viabill_payments_css_length($width);
+  if ($selector !== '' && $width !== '') {
+    $css .= ($css !== '' ? "\n" : '') . $selector . ' { width: ' . $width . ' !important; }';
+  }
+
+  return trim($css);
 }

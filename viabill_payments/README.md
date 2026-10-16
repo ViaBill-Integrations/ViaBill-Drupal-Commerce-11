@@ -46,11 +46,23 @@ Before configuring the payment gateway, you need to obtain your API key, API sec
 
 Alternatively, you can enter the credentials on the standalone form at `/admin/config/viabill/account`.
 
+If you do not have ViaBill account credentials yet, both forms show a link to the ViaBill online signup form while the API key, API secret or PriceTag script is missing.
+
+#### Keeping the API secret out of exported configuration
+
+The module keeps its own copy of the API secret in the State API, which is not part of configuration exports. The payment gateway itself stores the secret in its configuration, like other Drupal Commerce gateways. If you export configuration to version control, override the secret in `settings.php` (for example from an environment variable) and leave it empty in the exported file:
+
+```php
+$config['commerce_payment.commerce_payment_gateway.viabill_payments']['configuration']['api_secret'] = getenv('VIABILL_API_SECRET');
+```
+
+Replace `viabill_payments` with the machine name of your ViaBill payment gateway.
+
 ### Step 2: Configure the Payment Gateway
 
 Once you have entered your API credentials:
 
-1. The API Key, API Secret and PriceTag script are stored in the Drupal configuration (the API secret is never displayed back on the page)
+1. The API Key, API Secret and PriceTag script are applied to the payment gateway (the API secret is never displayed back on the page; see "Keeping the API secret out of exported configuration" above)
 2. Configure the following settings:
    - **Transaction Type**: Choose between "Authorize Only" or "Authorize and Capture"
    - **PriceTag Settings**: Configure how ViaBill price tags are displayed on your site

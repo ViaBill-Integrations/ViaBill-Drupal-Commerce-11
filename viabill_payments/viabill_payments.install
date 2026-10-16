@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the viabill_payments module.
+ */
+
+use Drupal\viabill_payments\Helper\ViaBillConstants;
+use Drupal\viabill_payments\Helper\ViaBillHelper;
+
+/**
+ * Implements hook_uninstall().
+ */
+function viabill_payments_uninstall() {
+  \Drupal::state()->delete(ViaBillConstants::STATE_API_SECRET);
+}
+
+/**
+ * Move the ViaBill API secret out of exportable configuration.
+ *
+ * The module's own copy of the API secret was stored in the
+ * viabill_payments.settings configuration, which is part of configuration
+ * exports. It is now kept in the State API instead.
+ */
+function viabill_payments_update_10201() {
+  $config = \Drupal::configFactory()->getEditable('viabill_payments.settings');
+  $secret = (string) ($config->get('api_secret') ?? '');
+
+  // Fall back to the secret of the ViaBill payment gateway, if any.
+  if ($secret === '') {
+    $gateway = ViaBillHelper::loadViaBillGateway();
+    if ($gateway) {
+      $configuration = $gateway->getPlugin()->getConfiguration();
+      $secret = (string) ($configuration['api_secret'] ?? '');
+    }
+  }
+
+  if ($secret !== '' && ViaBillHelper::getStoredSecret() === '') {
+    ViaBillHelper::setStoredSecret($secret);
+  }
+
+  if ($config->get('api_secret') !== NULL) {
+    $config->clear('api_secret')->save();
+  }
+
+  return t('The ViaBill API secret is no longer stored in the viabill_payments.settings configuration.');
+}

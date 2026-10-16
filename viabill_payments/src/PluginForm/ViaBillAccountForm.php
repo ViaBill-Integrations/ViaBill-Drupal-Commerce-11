@@ -5,6 +5,7 @@ namespace Drupal\viabill_payments\PluginForm;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\viabill_payments\Helper\ViaBillHelper;
 
 /**
  * Provides a form for merchants to enter their ViaBill credentials manually.
@@ -40,11 +41,11 @@ class ViaBillAccountForm extends ConfigFormBase {
 
     $config = $this->config('viabill_payments.settings');
     $existing_api_key = $config->get('api_key') ?? '';
-    $existing_api_secret = $config->get('api_secret') ?? '';
+    $existing_api_secret = ViaBillHelper::getStoredSecret();
     $existing_pricetag = $config->get('viabill_pricetag') ?? '';
 
     $form['description'] = [
-      '#markup' => $this->t('<p>Enter your ViaBill API key, API secret and PriceTag script below. You can find these values in your ViaBill merchant account. Once saved, they are stored in the Drupal configuration and applied to the ViaBill payment gateway.</p>'),
+      '#markup' => $this->t('<p>Enter your ViaBill API key, API secret and PriceTag script below. You can find these values in your ViaBill merchant account. Once saved, they are applied to the ViaBill payment gateway.</p>'),
     ];
 
     // Change the default "Save configuration" text to "Save Credentials".
@@ -85,6 +86,11 @@ class ViaBillAccountForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
+    // Point merchants without credentials to the ViaBill online signup form.
+    if (empty($existing_api_key) || empty($existing_api_secret) || empty($existing_pricetag)) {
+      $form['signup_note'] = ViaBillHelper::buildSignupNote();
+    }
+
     return $form;
   }
 
@@ -117,12 +123,12 @@ class ViaBillAccountForm extends ConfigFormBase {
 
     // An empty secret means "keep the currently stored secret".
     if ($api_secret === '') {
-      $api_secret = $config->get('api_secret') ?? '';
+      $api_secret = ViaBillHelper::getStoredSecret();
     }
 
     $config
       ->set('api_key', $api_key)
-      ->set('api_secret', $api_secret)
+      ->clear('api_secret')
       ->set('viabill_pricetag', $pricetag)
       ->save();
 

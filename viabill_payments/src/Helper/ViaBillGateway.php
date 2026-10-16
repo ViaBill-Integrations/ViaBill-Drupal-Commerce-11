@@ -78,10 +78,25 @@ class ViaBillGateway {
       }
 
       if (empty($redirect_url)) {
+        $body = trim((string) ($response['response']['body'] ?? ''));
+        $this->helper->log(
+          'Checkout returned no redirect (HTTP ' . $status . ') for transaction '
+          . ($data['transaction'] ?? '') . ' / order number ' . ($data['order_number'] ?? '')
+          . ': ' . ($body === '' ? '(empty body)' : $body),
+          'error'
+        );
         return [
-          'error' => 'Request already made',
+          'redirect_url' => NULL,
+          'status' => $status,
+          'error' => 'ViaBill responded with HTTP ' . $status . ($body === '' ? '' : ': ' . $body),
         ];
       }
+
+      $this->helper->log(
+        'Checkout created (HTTP ' . $status . ') for transaction '
+        . ($data['transaction'] ?? '') . ' / order number ' . ($data['order_number'] ?? '') . '.',
+        'info'
+      );
 
       $message = $this->getApiEndPointMessage($status, 'checkout');
 
@@ -340,33 +355,59 @@ class ViaBillGateway {
    *   in the data or false if it does not match.
    */
   public function verifyCallbackSignature(array $data, string $format = '', bool $silent = TRUE): bool {
-    $format = trim($format);
-    // Set the default format if no optional format is specified.
-    if (empty($format)) {
-      $format = '{transaction}#{orderNumber}#{amount}#{currency}#{status}#{time}#{secret}';
-    }
+    // The signature covers these callback fields, in this order, followed by
+    // the API secret. The secret always comes from the module configuration:
+    // a "secret" value in the (untrusted) callback data is never used.
+    $fields = ['transaction', 'orderNumber', 'amount', 'currency', 'status', 'time'];
 
-    if (!array_key_exists('signature', $data)) {
+    if (!isset($data['signature']) || !is_string($data['signature']) || $data['signature'] === '') {
+      if ($silent) {
+        return FALSE;
+      }
       throw new \Exception(__METHOD__ . ': Callback data is missing a "signature" key.');
     }
-    if ($this->apiSecret === NULL) {
-      throw new Exception('You must set the apiSecret with ' . __CLASS__ . '::apiSecret() before calling ' . __METHOD__ . '().');
+
+    // Without a configured secret the signature would be computable by anyone.
+    if (!is_string($this->apiSecret) || $this->apiSecret === '') {
+      if ($silent) {
+        return FALSE;
+      }
+      throw new \Exception(__METHOD__ . ': The ViaBill API secret is not configured.');
     }
-    // Retrieve the expected signature from the data array.
-    $sig = $data['signature'];
-    // Remove the expected signature from the data array.
-    unset($data['signature']);
-    // Parse the format and data into a populated string.
-    $format = $this->parseFormat($format, $data);
-    // Calculate the SHA256 checksum of the string.
-    $calculated = hash('sha256', $format);
-    if ($calculated === $sig) {
+
+    $values = [];
+    foreach ($fields as $field) {
+      if (!isset($data[$field]) || !is_scalar($data[$field])) {
+        if ($silent) {
+          return FALSE;
+        }
+        throw new \Exception(__METHOD__ . ': Callback data is missing the "' . $field . '" field.');
+      }
+      $values[] = (string) $data[$field];
+    }
+    $values[] = $this->apiSecret;
+
+    $calculated = hash('sha256', implode('#', $values));
+    if (hash_equals($calculated, strtolower($data['signature']))) {
       return TRUE;
     }
     if ($silent) {
       return FALSE;
     }
-    throw new \Exception(__METHOD__ . ':Expected signature [' . $sig . '] but got signature [' . $calculated . '].');
+    throw new \Exception(__METHOD__ . ': Callback signature mismatch.');
+  }
+
+  /**
+   * Use the credentials of a specific payment gateway (e.g. the order's).
+   *
+   * @param string $api_key
+   *   The API key.
+   * @param string $api_secret
+   *   The API secret.
+   */
+  public function setCredentials(string $api_key, string $api_secret): void {
+    $this->apiKey = $api_key;
+    $this->apiSecret = $api_secret;
   }
 
   /**
@@ -422,7 +463,8 @@ class ViaBillGateway {
       throw new \Exception(__METHOD__ . ': Invalid format string - Format does not contain any fields.');
     }
     foreach ($formatFields[1] as $key) {
-      if (array_key_exists($key, $data)) {
+      // The secret is never taken from the request data.
+      if ($key !== 'secret' && array_key_exists($key, $data)) {
         $val = $data[$key];
         if ($key === 'country') {
           $val = ($this->validIso($val) ? strtoupper(trim($val)) : $val);

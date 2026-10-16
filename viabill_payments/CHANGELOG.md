@@ -1,6 +1,28 @@
 # Changelog
 
-## Version 2.1.0 - Drupal 11 and Commerce 3.2 Compatibility Update
+## Unreleased - Security fixes and signup link
+
+### Security
+- Payment callbacks: the signature is always verified with the API secret of the order's payment gateway (a "secret" value in the callback data is never used), is rejected when no secret is configured, and is compared in constant time.
+- Payment callbacks: the order must belong to the ViaBill transaction and use a ViaBill payment gateway, and the amount and currency must match the order total.
+- Payment callbacks: repeated APPROVED callbacks no longer create another payment or capture again; a cancelled order is never re-opened and an order with an approved payment is never cancelled.
+- Payment callbacks: error responses no longer contain exception details; JSON callbacks are read for any JSON content type.
+- PriceTags: settings values are no longer part of Twig template source (template injection) and are escaped in HTML attributes; custom CSS can no longer close the style element and widths must be plain CSS lengths.
+- The module's copy of the API secret is stored in the State API instead of the exportable `viabill_payments.settings` configuration (update `viabill_payments_update_10201` moves existing values).
+- Checkout: the redirect URL must be an HTTPS ViaBill address and is escaped in the redirect script and link.
+- ViaBill API requests use explicit connect/total timeouts and certificate verification; connection failures are handled.
+- ViaBill notification messages on the settings page are XSS-filtered.
+- Capture, refund and void use the credentials of their own payment gateway; the credentials are found whatever the gateway is named.
+- Removed the unused ViaBill login/register form classes.
+
+### Added
+- A link to the ViaBill online signup form below the account credentials while they are missing.
+- `version` in `viabill_payments.info.yml`.
+
+### Fixed
+- PriceTag width rules (invalid CSS, wrong selector on product pages) and the PriceTag currency on product pages.
+
+## Version 2.1.1 - Drupal 11 and Commerce 3.2 Compatibility Update
 
 ### Changed
 - Updated `core_version_requirement` in `viabill_payments.info.yml` to support Drupal 11 (`^10 || ^11`)
