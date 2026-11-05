@@ -1,0 +1,48 @@
+# Spanish translation of ViaBill Payments (viabill_payments).
+msgid ""
+msgstr ""
+"Project-Id-Version: viabill_payments\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: es\n"
+
+msgid "Warning! Borrow responsibly - it costs money."
+msgstr "¡Advertencia! Pide prestado con responsabilidad - cuesta dinero."
+
+msgid "Legal Note"
+msgstr "Aviso legal"
+
+msgid "The legal note is a short information text shown to customers at checkout when ViaBill is selected as the payment method, such as a warning that borrowing money costs money."
+msgstr "El aviso legal es un breve texto informativo que se muestra a los clientes en la página de pago cuando se selecciona ViaBill como método de pago, por ejemplo, una advertencia de que pedir dinero prestado cuesta dinero."
+
+msgid "Show the legal note at checkout"
+msgstr "Mostrar el aviso legal en la página de pago"
+
+msgid "Text"
+msgstr "Texto"
+
+msgid "Leave empty to use the default legal note, in the language selected below."
+msgstr "Déjelo vacío para usar el aviso legal predeterminado, en el idioma seleccionado abajo."
+
+msgid "Default legal note: @text"
+msgstr "Aviso legal predeterminado: @text"
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "Language of the default legal note. \"Auto\" uses the language of the customer."
+msgstr "Idioma del aviso legal predeterminado. \"Automático\" usa el idioma del cliente."
+
+msgid "Auto"
+msgstr "Automático"
+
+msgid "English"
+msgstr "Inglés"
+
+msgid "Danish"
+msgstr "Danés"
+
+msgid "Spanish"
+msgstr "Español"

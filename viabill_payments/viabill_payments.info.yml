@@ -2,8 +2,12 @@ name: 'ViaBill Payments'
 type: module
 description: 'Provides a ViaBill Payments gateway integration for Drupal Commerce.'
 package: 'Commerce (Payment)'
-version: '2.1.1'
+version: '2.1.2'
 core_version_requirement: ^10 || ^11
+# Translations shipped with the module (imported by the Interface Translation
+# module). The path is relative to the Drupal root.
+interface translation project: viabill_payments
+interface translation server pattern: modules/custom/viabill_payments/translations/%project.%language.po
 # Commerce dependencies.
 dependencies:
   - drupal:commerce

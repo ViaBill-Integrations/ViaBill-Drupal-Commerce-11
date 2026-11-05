@@ -12,6 +12,7 @@ use Drupal\commerce_payment\Plugin\Commerce\PaymentGateway\OffsitePaymentGateway
 use Drupal\viabill_payments\Helper\ViaBillHelper;
 use Drupal\viabill_payments\Helper\ViaBillGateway;
 use Drupal\viabill_payments\Helper\ViaBillConstants;
+use Drupal\viabill_payments\Helper\ViaBillLegalNote;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -79,6 +80,9 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       'viabill_pricetag' => '',
       'transaction_type' => ViaBillConstants::TRANSACTION_TYPE_AUTHORIZE_ONLY,
       'order_number_prefix' => '',
+      'legal_note_enabled' => TRUE,
+      'legal_note_text' => '',
+      'legal_note_language' => ViaBillLegalNote::LANGUAGE_AUTO,
     ] + parent::defaultConfiguration();
   }
 
@@ -255,6 +259,53 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#default_value' => $this->configuration['order_number_prefix'] ?? '',
       '#maxlength' => 20,
       '#size' => 20,
+    ];
+
+    // Legal note (credit warning) shown next to ViaBill in the checkout.
+    $legal_note_language = $this->configuration['legal_note_language'] ?? ViaBillLegalNote::LANGUAGE_AUTO;
+    $legal_note_default = ViaBillLegalNote::getDefaultText(
+      $legal_note_language === ViaBillLegalNote::LANGUAGE_AUTO
+        ? \Drupal::languageManager()->getCurrentLanguage()->getId()
+        : $legal_note_language
+    );
+    // Name of the "enabled" checkbox, for showing the other fields only when
+    // it is checked. Without #parents the fields are simply always shown.
+    $legal_note_parents = array_merge($form['#parents'] ?? [], ['legal_note', 'enabled']);
+    $legal_note_enabled_selector = ':input[name="' . array_shift($legal_note_parents) . '[' . implode('][', $legal_note_parents) . ']"]';
+
+    $form['legal_note'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Legal Note'),
+      '#description' => $this->t('The legal note is a short information text shown to customers at checkout when ViaBill is selected as the payment method, such as a warning that borrowing money costs money.'),
+    ];
+
+    $form['legal_note']['enabled'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Show the legal note at checkout'),
+      '#default_value' => $this->configuration['legal_note_enabled'] ?? TRUE,
+    ];
+
+    $form['legal_note']['text'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Text'),
+      '#description' => $this->t('Leave empty to use the default legal note, in the language selected below.') . ' ' . $this->t('Default legal note: @text', ['@text' => $legal_note_default]),
+      '#default_value' => $this->configuration['legal_note_text'] ?? '',
+      '#placeholder' => $legal_note_default,
+      '#rows' => 2,
+      '#states' => [
+        'visible' => [$legal_note_enabled_selector => ['checked' => TRUE]],
+      ],
+    ];
+
+    $form['legal_note']['language'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Language'),
+      '#description' => $this->t('Language of the default legal note. "Auto" uses the language of the customer.'),
+      '#options' => ViaBillLegalNote::getLanguageOptions(),
+      '#default_value' => $legal_note_language,
+      '#states' => [
+        'visible' => [$legal_note_enabled_selector => ['checked' => TRUE]],
+      ],
     ];
 
     // Group 2: App Credentials — moved to the "ViaBill Account Credentials"
@@ -729,6 +780,9 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $this->configuration['viabill_pricetag_custom_css'] = $values['pricetags']['viabill_pricetag_custom_css'];
     $this->configuration['transaction_type'] = $values['payment_preferences']['transaction_type'];
     $this->configuration['order_number_prefix'] = trim($values['payment_preferences']['order_number_prefix'] ?? '');
+    $this->configuration['legal_note_enabled'] = !empty($values['legal_note']['enabled']);
+    $this->configuration['legal_note_text'] = trim($values['legal_note']['text'] ?? '');
+    $this->configuration['legal_note_language'] = $values['legal_note']['language'] ?? ViaBillLegalNote::LANGUAGE_AUTO;
 
     // The module's own copy of the API secret lives in the State API, so it
     // is never part of a configuration export.

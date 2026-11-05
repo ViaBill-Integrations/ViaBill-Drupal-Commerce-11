@@ -34,3 +34,9 @@ div.viabill_wrapper_alignment_center .viabill-pricetag {
 div.viabill_wrapper_alignment_center .viabill-pricetag iframe.viabill {
   width: 100% !important;
 }
+
+/* Legal note (credit warning) below the payment methods, see viabill_payments_form_alter() */
+.viabill-legal-note {
+  font-weight: 600;
+  margin: 0.5em 0;
+}

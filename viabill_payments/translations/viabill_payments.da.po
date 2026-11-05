@@ -1,0 +1,48 @@
+# Danish translation of ViaBill Payments (viabill_payments).
+msgid ""
+msgstr ""
+"Project-Id-Version: viabill_payments\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: da\n"
+
+msgid "Warning! Borrow responsibly - it costs money."
+msgstr "Advarsel! Lån med omtanke - det koster penge."
+
+msgid "Legal Note"
+msgstr "Juridisk meddelelse"
+
+msgid "The legal note is a short information text shown to customers at checkout when ViaBill is selected as the payment method, such as a warning that borrowing money costs money."
+msgstr "Den juridiske meddelelse er en kort informationstekst, der vises for kunderne ved kassen, når ViaBill er valgt som betalingsmetode, f.eks. en advarsel om, at det koster penge at låne penge."
+
+msgid "Show the legal note at checkout"
+msgstr "Vis den juridiske meddelelse ved kassen"
+
+msgid "Text"
+msgstr "Tekst"
+
+msgid "Leave empty to use the default legal note, in the language selected below."
+msgstr "Lad feltet være tomt for at bruge standardmeddelelsen på det sprog, der er valgt nedenfor."
+
+msgid "Default legal note: @text"
+msgstr "Standardmeddelelse: @text"
+
+msgid "Language"
+msgstr "Sprog"
+
+msgid "Language of the default legal note. \"Auto\" uses the language of the customer."
+msgstr "Sproget for standardmeddelelsen. \"Automatisk\" bruger kundens sprog."
+
+msgid "Auto"
+msgstr "Automatisk"
+
+msgid "English"
+msgstr "Engelsk"
+
+msgid "Danish"
+msgstr "Dansk"
+
+msgid "Spanish"
+msgstr "Spansk"

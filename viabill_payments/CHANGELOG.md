@@ -22,7 +22,7 @@
 ### Fixed
 - PriceTag width rules (invalid CSS, wrong selector on product pages) and the PriceTag currency on product pages.
 
-## Version 2.1.1 - Drupal 11 and Commerce 3.2 Compatibility Update
+## Version 2.1.2 - Drupal 11 and Commerce 3.2 Compatibility Update
 
 ### Changed
 - Updated `core_version_requirement` in `viabill_payments.info.yml` to support Drupal 11 (`^10 || ^11`)
