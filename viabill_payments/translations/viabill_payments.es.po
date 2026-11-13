@@ -46,3 +46,81 @@ msgstr "Danés"
 
 msgid "Spanish"
 msgstr "Español"
+
+msgid "Font size"
+msgstr "Tamaño de fuente"
+
+msgid "Font size of the legal note, e.g. 14px, 0.9em or 90%. Leave empty to use the font size of your theme."
+msgstr "Tamaño de fuente del aviso legal, p. ej. 14px, 0.9em o 90%. Déjelo vacío para usar el tamaño de fuente de su tema."
+
+msgid "Font style"
+msgstr "Estilo de fuente"
+
+msgid "Text color"
+msgstr "Color del texto"
+
+msgid "Color code of the legal note text, e.g. #cc0000. Leave empty to use the text color of your theme."
+msgstr "Código de color del texto del aviso legal, p. ej. #cc0000. Déjelo vacío para usar el color de texto de su tema."
+
+msgid "Text alignment"
+msgstr "Alineación del texto"
+
+msgid "Extra CSS"
+msgstr "CSS adicional"
+
+msgid "Optional CSS declarations applied to the legal note box, separated by semicolons (no selectors or braces), e.g. padding: 8px 12px; background-color: #fff8e1; border-left: 3px solid #f0b849; They are applied after the options above, so they can also override them."
+msgstr "Declaraciones CSS opcionales que se aplican al cuadro del aviso legal, separadas por punto y coma (sin selectores ni llaves), p. ej. padding: 8px 12px; background-color: #fff8e1; border-left: 3px solid #f0b849; Se aplican después de las opciones anteriores, por lo que también pueden sobrescribirlas."
+
+msgid "The font size of the legal note is not valid. Use a value such as 14px, 0.9em or 90%."
+msgstr "El tamaño de fuente del aviso legal no es válido. Use un valor como 14px, 0.9em o 90%."
+
+msgid "The text color of the legal note is not valid. Use a color code such as #cc0000."
+msgstr "El color del texto del aviso legal no es válido. Use un código de color como #cc0000."
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Bold"
+msgstr "Negrita"
+
+msgid "Italic"
+msgstr "Cursiva"
+
+msgid "Bold italic"
+msgstr "Negrita cursiva"
+
+msgid "Theme default"
+msgstr "Predeterminado del tema"
+
+msgid "Left"
+msgstr "Izquierda"
+
+msgid "Center"
+msgstr "Centro"
+
+msgid "Right"
+msgstr "Derecha"
+
+msgid "The legal note shown at checkout, in the language selected below."
+msgstr "El aviso legal que se muestra en la página de pago, en el idioma seleccionado abajo."
+
+msgid "Margin top"
+msgstr "Margen superior"
+
+msgid "Margin bottom"
+msgstr "Margen inferior"
+
+msgid "Margin left"
+msgstr "Margen izquierdo"
+
+msgid "Space above the legal note, e.g. 4px or 0.5em. A negative value moves it closer to the payment method name."
+msgstr "Espacio encima del aviso legal, p. ej. 4px o 0.5em. Un valor negativo lo acerca al nombre del método de pago."
+
+msgid "Space below the legal note, e.g. 4px or 0.5em."
+msgstr "Espacio debajo del aviso legal, p. ej. 4px o 0.5em."
+
+msgid "Space to the left of the legal note, e.g. 4px. A negative value moves it to the left."
+msgstr "Espacio a la izquierda del aviso legal, p. ej. 4px. Un valor negativo lo mueve a la izquierda."
+
+msgid "The margin of the legal note is not valid. Use a value such as 4px, -12px or 0.5em."
+msgstr "El margen del aviso legal no es válido. Use un valor como 4px, -12px o 0.5em."

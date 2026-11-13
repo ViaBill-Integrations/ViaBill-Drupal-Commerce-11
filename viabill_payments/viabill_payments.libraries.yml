@@ -3,3 +3,11 @@ styles:
   css:
     theme:
       css/viabill-payments.css: {}
+
+legal_note_admin:
+  version: 1.x
+  js:
+    js/legal-note-admin.js: {}
+  dependencies:
+    - core/drupal
+    - core/once

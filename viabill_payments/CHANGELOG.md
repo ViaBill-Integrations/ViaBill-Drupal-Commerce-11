@@ -18,11 +18,13 @@
 ### Added
 - A link to the ViaBill online signup form below the account credentials while they are missing.
 - `version` in `viabill_payments.info.yml`.
+- Styling options for the legal note (font size, font style, text color, text alignment, margins and extra CSS).
+- The legal note is always shown, with the default text in the selected language. Its default font style is normal.
 
 ### Fixed
 - PriceTag width rules (invalid CSS, wrong selector on product pages) and the PriceTag currency on product pages.
 
-## Version 2.1.2 - Drupal 11 and Commerce 3.2 Compatibility Update
+## Version 2.1.3 - CCD2 Legal Note Support
 
 ### Changed
 - Updated `core_version_requirement` in `viabill_payments.info.yml` to support Drupal 11 (`^10 || ^11`)

@@ -74,12 +74,21 @@ function _viabill_payments_legal_note_element($gateway_id) {
     return NULL;
   }
 
+  $configuration = $gateways[$gateway_id]->getPluginConfiguration();
   $text = ViaBillLegalNote::getText(
-    $gateways[$gateway_id]->getPluginConfiguration(),
+    $configuration,
     \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_INTERFACE)->getId()
   );
   if ($text === '') {
     return NULL;
+  }
+
+  // The styling settings of the gateway; the attribute value is escaped when
+  // the element is rendered.
+  $attributes = ['class' => ['viabill-legal-note']];
+  $style = ViaBillLegalNote::getStyle($configuration);
+  if ($style !== '') {
+    $attributes['style'] = $style;
   }
 
   return [
@@ -87,7 +96,7 @@ function _viabill_payments_legal_note_element($gateway_id) {
     '#tag' => 'div',
     // Already filtered by ViaBillLegalNote::getText().
     '#value' => Markup::create($text),
-    '#attributes' => ['class' => ['viabill-legal-note']],
+    '#attributes' => $attributes,
     '#attached' => ['library' => ['viabill_payments/styles']],
     '#cache' => ['tags' => $gateways[$gateway_id]->getCacheTags()],
   ];

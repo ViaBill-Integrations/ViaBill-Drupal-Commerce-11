@@ -80,10 +80,13 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       'viabill_pricetag' => '',
       'transaction_type' => ViaBillConstants::TRANSACTION_TYPE_AUTHORIZE_ONLY,
       'order_number_prefix' => '',
-      'legal_note_enabled' => TRUE,
-      'legal_note_text' => '',
       'legal_note_language' => ViaBillLegalNote::LANGUAGE_AUTO,
-    ] + parent::defaultConfiguration();
+      'legal_note_font_size' => ViaBillLegalNote::DEFAULT_FONT_SIZE,
+      'legal_note_font_style' => ViaBillLegalNote::DEFAULT_FONT_STYLE,
+      'legal_note_color' => '',
+      'legal_note_align' => '',
+      'legal_note_extra_css' => '',
+    ] + ViaBillLegalNote::DEFAULT_MARGINS + parent::defaultConfiguration();
   }
 
   /**
@@ -261,17 +264,13 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#size' => 20,
     ];
 
-    // Legal note (credit warning) shown next to ViaBill in the checkout.
+    // Legal note (credit warning) shown next to ViaBill in the checkout. It is
+    // always shown, with the default text; only its look can be changed.
     $legal_note_language = $this->configuration['legal_note_language'] ?? ViaBillLegalNote::LANGUAGE_AUTO;
-    $legal_note_default = ViaBillLegalNote::getDefaultText(
-      $legal_note_language === ViaBillLegalNote::LANGUAGE_AUTO
-        ? \Drupal::languageManager()->getCurrentLanguage()->getId()
-        : $legal_note_language
-    );
-    // Name of the "enabled" checkbox, for showing the other fields only when
-    // it is checked. Without #parents the fields are simply always shown.
-    $legal_note_parents = array_merge($form['#parents'] ?? [], ['legal_note', 'enabled']);
-    $legal_note_enabled_selector = ':input[name="' . array_shift($legal_note_parents) . '[' . implode('][', $legal_note_parents) . ']"]';
+    $legal_note_texts = ViaBillLegalNote::getDefaultTexts(\Drupal::languageManager()->getCurrentLanguage()->getId());
+    // Name of the language select, for the read-only text to follow it.
+    $legal_note_parents = array_merge($form['#parents'] ?? [], ['legal_note', 'language']);
+    $legal_note_language_name = array_shift($legal_note_parents) . ($legal_note_parents ? '[' . implode('][', $legal_note_parents) . ']' : '');
 
     $form['legal_note'] = [
       '#type' => 'fieldset',
@@ -279,22 +278,22 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#description' => $this->t('The legal note is a short information text shown to customers at checkout when ViaBill is selected as the payment method, such as a warning that borrowing money costs money.'),
     ];
 
-    $form['legal_note']['enabled'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Show the legal note at checkout'),
-      '#default_value' => $this->configuration['legal_note_enabled'] ?? TRUE,
-    ];
-
+    // Read only: shows the legal note in the selected language, and follows
+    // the language select (js/legal-note-admin.js). Nothing is saved for it.
     $form['legal_note']['text'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Text'),
-      '#description' => $this->t('Leave empty to use the default legal note, in the language selected below.') . ' ' . $this->t('Default legal note: @text', ['@text' => $legal_note_default]),
-      '#default_value' => $this->configuration['legal_note_text'] ?? '',
-      '#placeholder' => $legal_note_default,
+      '#description' => $this->t('The legal note shown at checkout, in the language selected below.'),
+      '#value' => $legal_note_texts[$legal_note_language] ?? $legal_note_texts[ViaBillLegalNote::LANGUAGE_AUTO],
       '#rows' => 2,
-      '#states' => [
-        'visible' => [$legal_note_enabled_selector => ['checked' => TRUE]],
+      '#resizable' => 'none',
+      '#attributes' => [
+        'readonly' => 'readonly',
+        'class' => ['viabill-legal-note-text'],
+        'data-viabill-legal-note-texts' => json_encode($legal_note_texts),
+        'data-viabill-legal-note-language' => $legal_note_language_name,
       ],
+      '#attached' => ['library' => ['viabill_payments/legal_note_admin']],
     ];
 
     $form['legal_note']['language'] = [
@@ -303,9 +302,73 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
       '#description' => $this->t('Language of the default legal note. "Auto" uses the language of the customer.'),
       '#options' => ViaBillLegalNote::getLanguageOptions(),
       '#default_value' => $legal_note_language,
-      '#states' => [
-        'visible' => [$legal_note_enabled_selector => ['checked' => TRUE]],
+    ];
+
+    // Styling of the legal note, see ViaBillLegalNote::getStyle().
+    $form['legal_note']['font_size'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Font size'),
+      '#description' => $this->t('Font size of the legal note, e.g. 14px, 0.9em or 90%. Leave empty to use the font size of your theme.'),
+      '#default_value' => $this->configuration['legal_note_font_size'] ?? ViaBillLegalNote::DEFAULT_FONT_SIZE,
+      '#maxlength' => 12,
+      '#size' => 12,
+    ];
+
+    $form['legal_note']['font_style'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Font style'),
+      '#options' => ViaBillLegalNote::getFontStyleOptions(),
+      '#default_value' => $this->configuration['legal_note_font_style'] ?? ViaBillLegalNote::DEFAULT_FONT_STYLE,
+    ];
+
+    // A plain text field: the HTML color input cannot be left empty.
+    $form['legal_note']['color'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Text color'),
+      '#description' => $this->t('Color code of the legal note text, e.g. #cc0000. Leave empty to use the text color of your theme.'),
+      '#default_value' => $this->configuration['legal_note_color'] ?? '',
+      '#maxlength' => 20,
+      '#size' => 12,
+    ];
+
+    $form['legal_note']['align'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Text alignment'),
+      '#options' => ViaBillLegalNote::getAlignOptions(),
+      '#default_value' => $this->configuration['legal_note_align'] ?? '',
+    ];
+
+    $legal_note_margins = [
+      'margin_top' => [
+        $this->t('Margin top'),
+        $this->t('Space above the legal note, e.g. 4px or 0.5em. A negative value moves it closer to the payment method name.'),
       ],
+      'margin_bottom' => [
+        $this->t('Margin bottom'),
+        $this->t('Space below the legal note, e.g. 4px or 0.5em.'),
+      ],
+      'margin_left' => [
+        $this->t('Margin left'),
+        $this->t('Space to the left of the legal note, e.g. 4px. A negative value moves it to the left.'),
+      ],
+    ];
+    foreach ($legal_note_margins as $legal_note_margin => [$title, $description]) {
+      $form['legal_note'][$legal_note_margin] = [
+        '#type' => 'textfield',
+        '#title' => $title,
+        '#description' => $description,
+        '#default_value' => ViaBillLegalNote::getMargin($this->configuration, 'legal_note_' . $legal_note_margin),
+        '#maxlength' => 12,
+        '#size' => 12,
+      ];
+    }
+
+    $form['legal_note']['extra_css'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Extra CSS'),
+      '#description' => $this->t('Optional CSS declarations applied to the legal note box, separated by semicolons (no selectors or braces), e.g. padding: 8px 12px; background-color: #fff8e1; border-left: 3px solid #f0b849; They are applied after the options above, so they can also override them.'),
+      '#default_value' => $this->configuration['legal_note_extra_css'] ?? '',
+      '#rows' => 2,
     ];
 
     // Group 2: App Credentials — moved to the "ViaBill Account Credentials"
@@ -745,6 +808,24 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     elseif (stripos($pricetag, '<script') === FALSE) {
       $form_state->setError($form['credentials']['viabill_pricetag'], $this->t('The PriceTag script does not look like a valid script snippet. Please paste the whole snippet, including the opening and closing script tags.'));
     }
+
+    // Styling of the legal note: empty means the styling of the theme.
+    $font_size = trim($values['legal_note']['font_size'] ?? '');
+    if ($font_size !== '' && ViaBillLegalNote::sanitizeFontSize($font_size) === '') {
+      $form_state->setError($form['legal_note']['font_size'], $this->t('The font size of the legal note is not valid. Use a value such as 14px, 0.9em or 90%.'));
+    }
+
+    $color = trim($values['legal_note']['color'] ?? '');
+    if ($color !== '' && ViaBillLegalNote::sanitizeColor($color) === '') {
+      $form_state->setError($form['legal_note']['color'], $this->t('The text color of the legal note is not valid. Use a color code such as #cc0000.'));
+    }
+
+    foreach (['margin_top', 'margin_bottom', 'margin_left'] as $legal_note_margin) {
+      $margin = trim($values['legal_note'][$legal_note_margin] ?? '');
+      if ($margin !== '' && ViaBillLegalNote::sanitizeMargin($margin) === '') {
+        $form_state->setError($form['legal_note'][$legal_note_margin], $this->t('The margin of the legal note is not valid. Use a value such as 4px, -12px or 0.5em.'));
+      }
+    }
   }
 
   /**
@@ -780,9 +861,19 @@ class ViaBillPayments extends OffsitePaymentGatewayBase implements SupportsRefun
     $this->configuration['viabill_pricetag_custom_css'] = $values['pricetags']['viabill_pricetag_custom_css'];
     $this->configuration['transaction_type'] = $values['payment_preferences']['transaction_type'];
     $this->configuration['order_number_prefix'] = trim($values['payment_preferences']['order_number_prefix'] ?? '');
-    $this->configuration['legal_note_enabled'] = !empty($values['legal_note']['enabled']);
-    $this->configuration['legal_note_text'] = trim($values['legal_note']['text'] ?? '');
+    // The legal note is always shown with the default text, so the settings
+    // of earlier versions for that are removed.
+    unset($this->configuration['legal_note_enabled'], $this->configuration['legal_note_text']);
     $this->configuration['legal_note_language'] = $values['legal_note']['language'] ?? ViaBillLegalNote::LANGUAGE_AUTO;
+    $this->configuration['legal_note_font_size'] = ViaBillLegalNote::sanitizeFontSize($values['legal_note']['font_size'] ?? '');
+    $this->configuration['legal_note_font_style'] = $values['legal_note']['font_style'] ?? ViaBillLegalNote::DEFAULT_FONT_STYLE;
+    $this->configuration['legal_note_color'] = ViaBillLegalNote::sanitizeColor($values['legal_note']['color'] ?? '');
+    $this->configuration['legal_note_align'] = $values['legal_note']['align'] ?? '';
+    $this->configuration['legal_note_extra_css'] = ViaBillLegalNote::sanitizeExtraCss($values['legal_note']['extra_css'] ?? '');
+    foreach (['margin_top', 'margin_bottom', 'margin_left'] as $legal_note_margin) {
+      $margin = ViaBillLegalNote::sanitizeMargin($values['legal_note'][$legal_note_margin] ?? '');
+      $this->configuration['legal_note_' . $legal_note_margin] = $margin !== '' ? $margin : ViaBillLegalNote::getDefaultMargin('legal_note_' . $legal_note_margin);
+    }
 
     // The module's own copy of the API secret lives in the State API, so it
     // is never part of a configuration export.
